@@ -1,0 +1,21 @@
+# Local build and editor files
+/build/
+**/build/
+.cache/
+.venv/
+__pycache__/
+*.pyc
+.idea/
+.vscode/
+*.o
+*.obj
+*.exe
+*.out
+*.dSYM/
+
+# Reproducible distribution output and local course material
+/dist/
+/references/local/
+*.zip
+
+# Keep experiment CSV/JSON and report sources versioned intentionally.

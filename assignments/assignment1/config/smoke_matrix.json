@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "status": "planned_not_executable_until_runner_is_implemented",
+  "description": "Small wiring check only. Not performance evidence.",
+  "threads": [1, 2, 3],
+  "warmup_repetitions": 0,
+  "measured_repetitions": 1,
+  "timeout_seconds": 30,
+  "locks": {
+    "implementations": ["tas", "ttas", "mcs", "std_mutex"],
+    "mode": "per_thread",
+    "iterations_per_thread": 100,
+    "prime_n": 97,
+    "outside_work": [0, 1]
+  },
+  "barriers": {
+    "implementations": ["sense_reversing", "std_barrier"],
+    "episodes": 1000
+  },
+  "counters": {
+    "implementations": ["mutex_tas", "mutex_ttas", "mutex_mcs", "mutex_std", "cas", "faa"],
+    "total_operations": 1000
+  }
+}

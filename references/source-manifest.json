@@ -1,0 +1,105 @@
+{
+  "source_archive": "Parallel_Computing_Slides_and_Assignments.zip",
+  "source_archive_sha256": "6c98ec676863976cddbc487781ebed86b8366fe90751d0563ae2385e41b3a141",
+  "review_date": "2026-10-15",
+  "slides_pdf_pages": 234,
+  "files": [
+    {
+      "archive_path": "Parallel_Computing/Slides/Ch00_Motivation.pdf",
+      "size_bytes": 114217,
+      "sha256": "f80b3f8d29aa60c82d0c1ffab47d30f5ef80713cf62dfbc0ec52fc41511775a3",
+      "pdf_pages": 4,
+      "review_status": "read_for_assignment1_plan"
+    },
+    {
+      "archive_path": "Parallel_Computing/Slides/Ch01_Consistency.pdf",
+      "size_bytes": 1188654,
+      "sha256": "e3ea2b25ebae28ccef0c0178dd1d052e9cb5df7f14342c166e7f0c93e3e047e6",
+      "pdf_pages": 32,
+      "review_status": "read_for_assignment1_plan"
+    },
+    {
+      "archive_path": "Parallel_Computing/Slides/Ch02a_Atomics.pdf",
+      "size_bytes": 1226986,
+      "sha256": "47eabdafe65312636cd6641495beac541528b375511c35c19d855896c4e237b2",
+      "pdf_pages": 26,
+      "review_status": "read_for_assignment1_plan"
+    },
+    {
+      "archive_path": "Parallel_Computing/Slides/Ch02b_Atomics.pdf",
+      "size_bytes": 949040,
+      "sha256": "6206abdcb1a9c2a165c4ba82cda27da0f123eeb5df693f894b787ebbe6fd3a59",
+      "pdf_pages": 28,
+      "review_status": "read_for_assignment1_plan"
+    },
+    {
+      "archive_path": "Parallel_Computing/Slides/Ch03_Spinlocks.pdf",
+      "size_bytes": 1323223,
+      "sha256": "223a2f2cd60cdc0774241a6821d2a28bb14d054587d2d0933938beceb3f29a9b",
+      "pdf_pages": 30,
+      "review_status": "read_for_assignment1_plan"
+    },
+    {
+      "archive_path": "Parallel_Computing/Slides/Ch04_Condition_Synchronization.pdf",
+      "size_bytes": 1094737,
+      "sha256": "a5a82033c30d78abdc362d4ffdec7b7335c0a8b303f6fecff33ceb0055da6e67",
+      "pdf_pages": 32,
+      "review_status": "read_for_assignment1_plan"
+    },
+    {
+      "archive_path": "Parallel_Computing/Slides/Ch05_Concurrent_Objects.pdf",
+      "size_bytes": 616700,
+      "sha256": "ff69ce9fbb023692c5ae481e3b42395e91c7a1234fc71cfb37341a54f2c8b23e",
+      "pdf_pages": 22,
+      "review_status": "read_for_assignment1_plan"
+    },
+    {
+      "archive_path": "Parallel_Computing/Slides/Ch06_Blocking_Concurrency.pdf",
+      "size_bytes": 1043358,
+      "sha256": "43b47a4393cb2cabead2ab0af78665b64fbc706f9bcc911e7f0aae524a17a2e9",
+      "pdf_pages": 34,
+      "review_status": "read_for_assignment1_plan"
+    },
+    {
+      "archive_path": "Parallel_Computing/Slides/Ch07_Nonblocking_Objects.pdf",
+      "size_bytes": 1222620,
+      "sha256": "764a7b313fa61134ea9af9404010507b5ac59d0ea0fd1ce0118d79c7e83ba216",
+      "pdf_pages": 26,
+      "review_status": "read_for_assignment1_plan"
+    },
+    {
+      "archive_path": "Parallel_Computing/Outline/DCMH_CO5133_Parallel_Computing.pdf",
+      "size_bytes": 424759,
+      "sha256": "f740b0b7060f25fb5504b4b9f95a1e35a2bd0c54178477e54047ff3d3fee75cd",
+      "pdf_pages": 8,
+      "review_status": "indexed_only_not_reviewed_in_detail"
+    },
+    {
+      "archive_path": "Parallel_Computing/Assignment_1/Assignment1_v1_16092026.pdf",
+      "size_bytes": 237669,
+      "sha256": "e0eab0a116135b7655d6fb8ebe53111b1c94cc7f05c012be19eaf98ecae02179",
+      "pdf_pages": 4,
+      "review_status": "read_for_assignment1_plan"
+    },
+    {
+      "archive_path": "Parallel_Computing/Assignment_2/Assignment2_v1_30092026.pdf",
+      "size_bytes": 129230,
+      "sha256": "eb08f9d28aea3ad611dce525a348ef53e287a2f89971981386a61f971be3fd45",
+      "pdf_pages": 2,
+      "review_status": "indexed_only_not_reviewed_in_detail"
+    },
+    {
+      "archive_path": "Parallel_Computing/Assignment_2/osm-astar.ipynb",
+      "size_bytes": 285644,
+      "sha256": "192f457a282cd3e2866259c291955954cae8ebf66f78d588e1c3dcde7a408a4f",
+      "review_status": "indexed_only_not_reviewed_in_detail"
+    },
+    {
+      "archive_path": "Parallel_Computing/Assignment_2/pc8_astar-algorithm-pc-discussion.pdf",
+      "size_bytes": 3742307,
+      "sha256": "2fb5dad62fe4e9c831807d46cb633b0b89df1a24f2aaf69a94d061a0cfac8bd1",
+      "pdf_pages": 12,
+      "review_status": "indexed_only_not_reviewed_in_detail"
+    }
+  ]
+}
