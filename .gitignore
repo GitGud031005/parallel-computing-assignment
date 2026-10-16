@@ -43,3 +43,13 @@ __pycache__/
 
 /results-local/
 /validation-local/
+
+# Ass2 course material, downloaded networks, and generated outputs
+/assignments/assignment2/data/local/
+/assignments/assignment2/results/*/
+/assignments/assignment2/report/report.md
+*.ipynb
+*.osm
+*.osm.bz2
+*.graphml
+/assignments/assignment2/report/figures/

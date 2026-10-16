@@ -15,6 +15,7 @@ Cần CMake >=3.20, compiler/standard library hỗ trợ C++20 `std::barrier`; P
 | Tài liệu | Nội dung |
 | --- | --- |
 | [Assignment 1](assignments/assignment1/README.md) | Hướng dẫn code và lệnh thực thi |
+| [Assignment 2](assignments/assignment2/README.md) | A*, sorted lists, real-road data và pipeline |
 | [Requirements](assignments/assignment1/docs/requirements.md) | Đối chiếu từng yêu cầu đề |
 | [Verification](assignments/assignment1/docs/verification.md) | Review thuật toán, kiến thức slide, tests và giới hạn |
 | [Design](assignments/assignment1/docs/design.md) | State, contracts và happens-before |
@@ -26,4 +27,4 @@ Cần CMake >=3.20, compiler/standard library hỗ trợ C++20 `std::barrier`; P
 
 GitHub lưu source, tests, scripts, cấu hình và tài liệu tự viết. **Không upload slide/PDF đề gốc.** Build output, logs, raw data, figures, report sinh ra và ZIP nằm ngoài phần code publish; các đường dẫn này đã được ignore. Ghi chú/manifest nguồn là thông tin tham chiếu, không chứa bản sao tài liệu gốc.
 
-Phần shared-memory bắt buộc đã có implementation và pipeline; MPI-3 RMA tùy chọn chưa triển khai. Reference study chạy trong managed Linux, không phải laptop người nộp. Yêu cầu đo trên máy cá nhân thực có, điền định danh và đối chiếu giờ LMS vẫn cần hoàn tất trước nộp. Assignment 2 hiện chỉ dành sẵn thư mục.
+Phần shared-memory bắt buộc đã có implementation và pipeline; MPI-3 RMA tùy chọn chưa triển khai. Reference study chạy trong managed Linux, không phải laptop người nộp. Yêu cầu đo trên máy cá nhân thực có, điền định danh và đối chiếu giờ LMS vẫn cần hoàn tất trước nộp. [Assignment 2](assignments/assignment2/README.md) có A* tuần tự/song song, concurrent sorted lists, heuristic động/uncertain và Pareto objectives trên OSM road graph thật; xem README riêng để build/run/validate.

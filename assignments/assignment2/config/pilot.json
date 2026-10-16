@@ -1,0 +1,31 @@
+{
+  "purpose": "Diagnostic pilot only",
+  "threads": [
+    1,
+    4,
+    8
+  ],
+  "heuristics": [
+    "landmark"
+  ],
+  "objectives": [
+    "distance",
+    "pareto"
+  ],
+  "query_count": 1,
+  "dynamic_period": 64,
+  "max_labels": 1000000,
+  "set_mixes": [
+    "read_heavy",
+    "update_heavy"
+  ],
+  "set_key_ranges": [
+    64,
+    512
+  ],
+  "set_operations": 20000,
+  "seed": 20261016,
+  "warmups": 0,
+  "repetitions": 2,
+  "timeout_seconds": 60
+}

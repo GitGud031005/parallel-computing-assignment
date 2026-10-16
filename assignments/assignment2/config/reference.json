@@ -1,0 +1,16 @@
+{
+  "purpose": "Reference sweep; short real-road queries include overhead and do not guarantee speedup.",
+  "threads": [1, 2, 4, 8],
+  "heuristics": ["zero", "landmark", "dynamic", "uncertain"],
+  "objectives": ["distance", "time", "pareto"],
+  "query_count": 3,
+  "dynamic_period": 64,
+  "max_labels": 1000000,
+  "set_mixes": ["read_heavy", "update_heavy"],
+  "set_key_ranges": [64, 512],
+  "set_operations": 20000,
+  "seed": 20261016,
+  "warmups": 1,
+  "repetitions": 5,
+  "timeout_seconds": 60
+}
