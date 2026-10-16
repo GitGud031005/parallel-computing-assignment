@@ -2,6 +2,10 @@
 
 Các choices cụ thể hóa điều kiện mở của đề, xem [requirements](requirements.md). Đối chiếu Ch06 PDF trang 4-24, Ch05 trang 15-19, Ch02a/b atomics và A* discussion trang 7-10. Không copy pseudocode mẫu có lỗi thành code chạy.
 
+## Nguồn kiến thức và thứ tự ưu tiên
+
+Xem [review theo slide](../../../docs/course-review.md). Coarse/fine lists và khung f=g+h là nội dung môn; reopen, priority labels và active-work accounting là điều chỉnh được giải thích để đáp ứng phần mở/song song. ALT/landmark là optimization thêm ngoài slide, không phải yêu cầu bắt buộc. Công thức dynamic/uncertain và Pareto objectives là mô hình đã chọn, cần công khai giả định. Code/default đã đo được giữ nguyên; đọc phần ALT sau khi nắm list và A* core.
+
 ## Graph và heuristic
 
 Directed finite graph, hai nonnegative integer costs. Các phép cộng kiểm finite domain, infinity không tham gia arithmetic thường. Landmark distances được tính trên graph và reverse graph cho từng component. Triangle inequality cho `d(L,t)-d(L,v)` và `d(v,L)-d(t,L)` là lower bounds, max với 0 vẫn admissible; hạng chứa infinity bỏ qua. Bound của mỗi component có thể đến từ landmark khác, vẫn là componentwise lower bound, không cần cùng một path tối ưu cả hai.

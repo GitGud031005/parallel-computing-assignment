@@ -1,6 +1,8 @@
-# Ghi chú slide phục vụ Assignment 1
+# Ghi chú slide: nền tảng Ass1 và liên hệ Ass2
 
 Đã đọc **9 bộ slide, 234 trang PDF**, từ archive người dùng cung cấp. Số trang dưới đây là **thứ tự trang trong PDF tính từ 1**; đôi chỗ khác số in ở footer (ví dụ trang cuối Ch01). Tài liệu nguồn được nhận diện trong [source-index.md](../references/source-index.md).
+
+Phần Ass1 bên dưới được ghi ban đầu khi dựng bài. [Review theo slide cho cả hai bài](course-review.md) bổ sung mapping của Ass2, câu hỏi mở trong tài liệu A* và phân loại ALT là mở rộng ngoài slide. Ưu tiên slide/đề gốc khi giải thích thuật toán.
 
 ## 1. Bản đồ đọc và áp dụng
 
@@ -70,7 +72,7 @@ Spinlock vẫn là blocking synchronization: owner bị dừng có thể chặn 
 
 Mutex counter dùng một lock cho toàn bộ state là coarse-grained design phù hợp với bài này. Dùng scope guard để trả lock đúng cả các đường thoát. MCS tuy không cấp phát/xóa node mỗi operation vẫn cần lifetime ổn định đến hết release; không để vector di chuyển node có atomic giữa lúc worker chạy.
 
-Các linked-list variants minh họa race ở việc xóa node và validation; không mở rộng phạm vi bài sang cài concurrent set.
+Các linked-list variants minh họa race ở xóa node và validation. Concurrent set không bắt buộc trong Ass1; với Ass2, coarse/fine-grained sorted lists ở Ch06 là nội dung trực tiếp phải áp dụng, đặc biệt hai-node deletion, lock coupling và contains cũng khóa.
 
 ### Ch07: CAS không tự giải quyết mọi vấn đề
 
@@ -84,7 +86,7 @@ Treiber stack cho thấy CAS thành công chưa đủ nếu gặp ABA và lifeti
 4. Counter specification: Ch05 trang 5-7, 15-19; Ch02a trang 16-21.
 5. Thảo luận giới hạn: Ch00; Ch06 phần invariant/lifetime; Ch07 phần ABA/progress.
 
-## 4. Nguồn đối chiếu thêm
+## 4. Nguồn đối chiếu thêm (vai trò bổ sung)
 
 Đã đối chiếu các quyết định C++20 với working draft N4861 và thuật toán gốc của nhóm Rochester. Các nguồn này bổ sung cho slide, không thay đổi yêu cầu của đề:
 

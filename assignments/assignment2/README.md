@@ -4,6 +4,12 @@ C++20 implementation cho [yêu cầu Ass2](docs/requirements.md): A* tuần tự
 
 Slide, PDF đề và notebook mẫu **không được upload GitHub**. GitHub giữ code và ghi chú tự viết; OSM extracts, dữ liệu đo, logs, PDF/ZIP sinh ra giữ cục bộ. Mốc thực nghiệm tham chiếu và giới hạn ở [verification.md](docs/verification.md).
 
+## Đọc theo kiến thức môn học trước
+
+[Bản review cả hai bài theo slide](../../docs/course-review.md) chỉ rõ phần trực tiếp từ slide, phần điều chỉnh theo đề và phần mở rộng. Ưu tiên Ch06 coarse/fine sorted lists → A* discussion tr.7-10 (`f=g+h`, relaxation/predecessor và câu hỏi mở) → Ch04 condition synchronization/termination.
+
+**ALT/landmark là optimization ngoài slide**, được đề cho phép ở phần tùy chọn; code đã đo vẫn mặc định landmark. Dynamic/uncertain lấy bound từ ALT và các công thức epoch/band/Pareto là choices được ghi rõ, không phải công thức giảng viên quy định sẵn. Để theo dõi scalar control trước, chạy `--heuristic zero --objective distance`; sau khi hiểu logic mới đọc phần ALT. Policy zero vẫn dùng chung setup/preprocessing, không gọi đó là end-to-end run không có preprocessing.
+
 ## 1. Build và chạy nhanh
 
 Mọi lệnh dưới đây chạy từ **gốc repo**, nơi có `CMakeLists.txt` và `assignments/`. Cần CMake >=3.20, compiler/standard library C++20 (GCC 13.3 đã được kiểm tra), Python >=3.10. C++ và pipeline đo/validate chỉ dùng standard libraries; Matplotlib/ReportLab dùng cho hình/PDF.
@@ -37,7 +43,7 @@ Mỗi executable nhận `--help`, trả JSON/exit 0 khi thành công; `--output 
 | [docs](docs/) | Requirements, design, testing, benchmarking, review cuối |
 | [data](data/) | Synthetic fixture; hướng dẫn road data thật |
 
-Đọc theo thứ tự: `graph.hpp/cpp` → `sorted_list.hpp` → `search.hpp/cpp` → entry points → tests. [Design](docs/design.md) giải thích invariants, admissibility, dominance và termination.
+Để học theo slide: đọc `sorted_list.hpp` với Ch06 trước; tiếp theo `graph.hpp` (data model) và `search.hpp/cpp` với A* discussion; sau đó entry points/tests. Phần `LandmarkBounds` trong `graph.cpp` đọc sau cùng như mở rộng. [Design](docs/design.md) giải thích invariants, admissibility, dominance và termination.
 
 ## 3. Dữ liệu đường thật và truy vấn tùy ý
 

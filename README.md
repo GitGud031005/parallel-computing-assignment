@@ -10,7 +10,7 @@ cmake --build build/release -j 4
 ctest --test-dir build/release --output-on-failure
 ```
 
-Cần CMake >=3.20, compiler/standard library hỗ trợ C++20 `std::barrier`; Python >=3.10 để chạy đủ 6 nhóm test/scripts. Linux/WSL2 là môi trường tham chiếu.
+Cần CMake >=3.20, compiler/standard library hỗ trợ C++20 `std::barrier`; Python >=3.10 để chạy đủ 10 nhóm test/scripts của hai bài. Linux/WSL2 là môi trường tham chiếu.
 
 | Tài liệu | Nội dung |
 | --- | --- |
@@ -22,6 +22,7 @@ Cần CMake >=3.20, compiler/standard library hỗ trợ C++20 `std::barrier`; P
 | [Testing](assignments/assignment1/docs/testing.md) | Oracles và các lịch chạy khó |
 | [Benchmarking](assignments/assignment1/docs/benchmarking.md) | Workload, timers và thống kê |
 | [Plan](assignments/assignment1/docs/plan.md) | Kế hoạch và trạng thái |
+| [Review theo slide](docs/course-review.md) | Đối chiếu cả Ass1/Ass2; kiến thức môn, giả định và mở rộng |
 | [Slide notes](docs/slide-notes.md) | Ghi chú tự viết từ 9 bộ slide |
 | [Source index](references/source-index.md) | Danh mục nguồn đã đọc |
 

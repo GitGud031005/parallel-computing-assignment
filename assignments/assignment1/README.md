@@ -4,6 +4,10 @@ Project C++20 cài đặt TAS/TTAS/MCS, Sense-Reversing Barrier và concurrent c
 
 GitHub chứa code và tài liệu tự viết. **Slide và PDF đề gốc không được đưa lên GitHub.** Dữ liệu đo, logs, hình, PDF report và ZIP được sinh cục bộ; xem [results](results/README.md). Kết quả đối chiếu lần cuối ở [verification.md](docs/verification.md).
 
+## Đọc theo kiến thức môn học
+
+[Bản review cả hai bài theo slide](../../docs/course-review.md) có bảng slide → thuật toán → code, các khác biệt hợp lý giữa pseudocode và C++ và giới hạn của tests. Với Ass1, ưu tiên Ch02a/b → Ch03 TAS/TTAS/MCS → Ch04 sense reversal → Ch05 counter specification/progress. Nguồn chuẩn C++/pseudocode ngoài môn chỉ bổ sung cho việc diễn đạt, không thay slide làm cơ sở chính.
+
 ## 1. Build và chạy nhanh
 
 Chạy mọi lệnh dưới đây từ **thư mục gốc repo**, nơi có `CMakeLists.txt` và `assignments/`. Cần CMake >=3.20, compiler cùng standard library hỗ trợ C++20 `std::barrier`, Python >=3.10 để chạy đủ 6 nhóm test/scripts. Phần C++ chỉ dùng standard library; Linux/WSL2 là môi trường tham chiếu. GCC 13.3 đã build thành công; trên toolchain khác CMake sẽ probe `std::barrier`.

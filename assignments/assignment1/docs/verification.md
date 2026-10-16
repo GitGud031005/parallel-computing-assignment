@@ -1,5 +1,7 @@
 # Double-check: kiến thức, implementation và phép đo
 
+> Review ưu tiên slide cho cả hai bài: [course-review.md](../../../docs/course-review.md). Đã phân biệt kiến thức môn, điều chỉnh theo đề và ALT ngoài slide; chạy lại Release/TSan đủ 10 groups. Kernel không đổi trong lượt review này.
+
 > Đợt Ass1 dưới đây gắn với commit 6a7b2b4 trước tích hợp Ass2. Root CMake mới thêm Ass2 nên build fingerprint thay đổi dù thuật toán Ass1 không đổi. Lượt tích hợp Ass2 đã chạy lại đủ 6 Ass1 groups trong cả 5 build modes; xem [Ass2 verification](../../assignment2/docs/verification.md). Số liệu Ass1 cũ vẫn gắn với fingerprint/commit cũ, không được gọi là số đo của root build mới.
 
 Đối chiếu theo slides Ch01/Ch02a/Ch02b/Ch03/Ch04/Ch05, code ảnh của đề trang 1-2 và C++20 working draft N4861. Review dưới đây là kiểm tra từng đường trạng thái và bằng chứng thực thi; không phải tuyên bố đã duyệt mọi interleaving bằng model checker.

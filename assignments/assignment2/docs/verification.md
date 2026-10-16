@@ -1,5 +1,7 @@
 # Review cuối Ass2 - 16/10/2026
 
+> Review ưu tiên slide cho cả hai bài: [course-review.md](../../../docs/course-review.md). Đã phân biệt kiến thức môn, điều chỉnh theo đề và ALT ngoài slide; chạy lại Release/TSan đủ 10 groups. Kernel không đổi trong lượt review này.
+
 Đã đối chiếu lại cả 2 trang Assignment2_v1_30092026, 12 trang A* discussion, notebook mẫu và Ch06/Ch05/Ch02a/b. Bản gốc không đưa lên GitHub. Đây là code review theo invariants và bằng chứng thực thi, không phải formal model checking.
 
 ## Yêu cầu và kiến thức
