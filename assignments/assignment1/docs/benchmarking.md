@@ -1,6 +1,21 @@
 # Thiết kế thí nghiệm và phân tích
 
-**Trạng thái:** protocol và cấu hình dự kiến; chưa có kết quả đo. Giá trị trong [benchmark_matrix.json](../config/benchmark_matrix.json) là điểm bắt đầu cho pilot, không phải số liệu đã thu hoặc cấu hình bắt buộc của đề.
+**Protocol đã triển khai.** Matrix thực thi có schema v2, giá trị cụ thể trong [benchmark_matrix.json](../config/benchmark_matrix.json). Raw/metadata giữ riêng cho smoke, pilot và reference run; CSV/summary/report chỉ nói về môi trường thực sự đã đo. Các mục phía dưới còn giữ gợi ý mở rộng ban đầu; khi khác, manifest của run và bảng cấu hình thực tế ngay dưới là authoritative.
+
+## Cấu hình reference đã chốt
+
+| Series | Cấu hình |
+| --- | --- |
+| Core locks | 5 implementations (TAS/TTAS/MCS/std mutex/TTAS-backoff), P=1/2/3/4/8, N=997, W=0/1/2/4/8 |
+| Lock modes | fixed-total K=20000; per-thread I=5000 |
+| Sensitivity | N=97/K=200000 và N=10007/K=2000; W=0/4, fixed-total; giữ K giữa algorithms/P trong mỗi series |
+| Barriers | Sense-Reversing/std barrier, E=20000, cùng P |
+| Counters | 4 mutex + CAS + FAA + CAS-backoff, K=1000000, cùng P |
+| Repetition | 2 warmups + 7 measured; seeded order 20261016; 395 configurations, 3555 raw samples |
+
+Đây là reference sweep trên managed Linux với 9 affinity logical CPUs nhưng quota tương đương 8 CPUs; P chính dừng ở 8. Oversubscription có bounded correctness cases riêng, chưa làm performance claims. Pilot được giữ nguyên trong `results/raw/.../pilot-20261016`. Các series ngắn để phủ đủ tham số; không đạt mục tiêu gợi ý 0,5-2 giây cho mọi run. Với workload nhanh, startup/scheduling là phần quan trọng của program metric theo đề, và worker metric được giữ riêng để kiểm tra tác động đó. Không ngụy tạo là thí nghiệm laptop cá nhân.
+
+CLI xuất JSON rồi Python runner lưu từng sample vào raw CSV, bao gồm source fingerprint ngay trong executable, build type và sanitizer. `pc_environment` được đối chiếu current C++/CMake digest; mỗi benchmark sample cũng phải có cùng digest/build mode. Dữ liệu dùng report cần được summarize.py kiểm independent checksum và manifest, đủ repetition, không có failed/timeout chưa xử lý.
 
 ## 1. Câu hỏi cần trả lời
 

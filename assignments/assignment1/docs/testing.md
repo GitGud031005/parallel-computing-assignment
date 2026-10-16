@@ -1,13 +1,13 @@
 # Kế hoạch kiểm thử correctness
 
-Chưa có test executable. Đây là đặc tả cho M1-M4. Mỗi test phải có oracle độc lập, failure message đủ seed/config và process timeout. Chạy correctness trước performance; instrumentation correctness không nằm trong hot loop của bản Release đo chính.
+Đã có test executable và CTest registration. Đặc tả dưới đây giải thích oracle; kết quả thực thi ở [verification.md](verification.md), logs/checks.json sinh cục bộ bởi verify.py. Mỗi test phải có oracle độc lập, failure message đủ seed/config và process timeout. Chạy correctness trước performance; instrumentation correctness không nằm trong hot loop của bản Release đo chính.
 
 ## 1. Ma trận chung và test harness
 
 | Trục | Giá trị ban đầu đề xuất |
 | --- | --- |
-| Số threads | 1, 2, 3, 4, 8; thêm `logical_cpus + 1` cho một stress case có giới hạn |
-| Lần lặp | Smoke: 1-1.000 operations; stress: 100.000 hoặc lớn hơn sau pilot |
+| Số threads | 1, 2, 3, 4, 5, 8; thêm `hardware_concurrency + 1` (clamp 2..32) cho một stress case có giới hạn |
+| Lần lặp | Ma trận C++: 1000 vòng/case; --stress: 10000 vòng/case; CLI smoke dùng workload nhỏ riêng |
 | Lịch gây nhiễu | Không can thiệp; yield có seed; delay một worker; delayed enqueue MCS |
 | Build | Debug; Release correctness; TSan khi được hỗ trợ; ASan/UBSan riêng nếu cần kiểm lifetime/UB |
 | Seed | Tối thiểu 5 seed cố định cho stress, lưu seed trong log |
@@ -25,7 +25,7 @@ Start gate dùng primitive tin cậy độc lập với lock/barrier đang test.
 | L-T2 | Atomic occupancy trong CS: fetch_add trước, fetch_sub sau | Mỗi entry thấy giá trị cũ 0; phát hiện overlap |
 | L-T3 | Tăng protected plain counter K lần ở P threads | Final count chính xác P×K; bắt lost update |
 | L-T4 | Protected payload có nhiều field liên hệ, đọc/sửa dưới tested lock | Invariant luôn đúng; test publication giữa owners |
-| L-T5 | Stress: CS ngắn/dài, ngoài CS thay đổi, yield/delay | Không lỗi oracle, không timeout; ghi thời gian chờ để quan sát |
+| L-T5 | Stress: CS ngắn/dài, ngoài CS thay đổi, yield/delay | Không lỗi oracle, không timeout; chưa instrument per-acquisition wait-time/fairness diagnostic |
 | L-T6 | Hai locks, hai bộ context độc lập; acquire/release xen kẽ theo thứ tự nhất quán | Phát hiện state/context static dùng nhầm giữa instances |
 
 L-T2 và L-T4 phải tách: atomic occupancy/telemetry có thể vô tình tạo synchronization che lỗi visibility. Không thêm cờ release/acquire phụ giữa publication payload và đọc payload nếu mục tiêu là kiểm tested lock. Khi tested lock sai, payload test có thể xuất hiện race; TSan là một tín hiệu kiểm tra cần dùng cùng oracle và lập luận.
@@ -69,7 +69,7 @@ B-T4 dùng gate độc lập để giữ participant cuối; quan sát early-exi
 | C-T1 | Increment tuần tự từ 0 | Trả 0,1,2,...; value bằng số operations |
 | C-T2 | P workers cùng tăng K lần | Final value P×K chính xác trên mọi biến thể |
 | C-T3 | Thu các giá trị trả về vào buffer riêng, sort sau join | Tập bằng đúng [0, P×K); không trùng, không thiếu |
-| C-T4 | Lịch nhỏ gồm increment/value có quan hệ không chồng lấp được điều khiển | Kết quả phù hợp spec và real-time precedence; bổ sung lập luận linearization point |
+| C-T4 | Lịch nhỏ gồm increment/value có quan hệ không chồng lấp được điều khiển | Kiểm tra own-thread read sau increment và post-join precedence; không có exhaustive history checker; bổ sung lập luận linearization point |
 | C-T5 | CAS contention cao, thử nhiều seed/yield trước retry | Desired được tính lại, expected được xử lý đúng |
 | C-T6 | Input âm, 0/biên, tổng vượt uint64_t, phép nhân overflow | Từ chối trường hợp invalid trước chạy; zero operations chỉ là correctness case nếu hỗ trợ |
 | C-T7 | Nhiều counter instances, contexts riêng | Không chia sẻ nhầm state giữa các counters |

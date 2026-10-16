@@ -1,12 +1,7 @@
-# Correctness tests
+# Correctness và analysis tests
 
-Đặc tả chi tiết ở [testing.md](../docs/testing.md). Chưa có test code hoặc CTest registration.
+6 CTest groups: workload, locks, barriers, counters, cli_validation, analysis_validation. C++ test checks vẫn hoạt động ở Release. Các suite locks/barriers/counters nhận --stress để tăng 10 lần iterations.
 
-| File sẽ tạo | Phạm vi |
-| --- | --- |
-| `test_workload.cpp` | Naive prime và input edge cases |
-| `test_locks.cpp` | Mutual exclusion, visibility, stress, MCS enqueue gap |
-| `test_barriers.cpp` | Reusable phases, no early release, visibility, multiple instances |
-| `test_counters.cpp` | Final count, old-value uniqueness, nhỏ/boundary cases |
+Các interleaving khó dùng compile-time hooks: MCS successor dừng giữa tail exchange và next publication; barrier quan sát một arrival thật trước khi giữ last participant. Payload test tách khỏi occupancy instrumentation. Cùng worker có context riêng ở 2 instances; barrier test dùng lịch A-A-B và barrier thứ hai trước vòng ghi kế tiếp.
 
-Khi có tests thật: đăng ký CTest cùng TIMEOUT, trả exit code khác 0 khi fail, không phụ thuộc output nhìn bằng mắt. CTest không có tests ở scaffold hiện tại không được tính là correctness pass.
+Tóm tắt kết quả và giới hạn: [verification.md](../docs/verification.md). Logs/checks.json sinh cục bộ bằng `scripts/verify.py`. Kế hoạch/oracle chi tiết ở [testing.md](../docs/testing.md).

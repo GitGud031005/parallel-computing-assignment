@@ -1,14 +1,7 @@
-# Lock headers dự kiến
+# Mutex locks
 
-Chưa có implementation. Tạo các file theo M2; contract và memory orders nằm trong [design.md](../../../docs/design.md).
+`tas_lock.hpp`: TAS; `ttas_lock.hpp`: TTAS và `TtasBackoffLock`; `mcs_lock.hpp`: MCS; `std_mutex_adapter.hpp`: baseline; `scoped_lock.hpp`: RAII guard.
 
-| File sẽ tạo | Vai trò |
-| --- | --- |
-| `tas_lock.hpp` | TAS bằng atomic flag |
-| `ttas_lock.hpp` | TTAS bằng atomic bool |
-| `mcs_lock.hpp` | MCS, node atomic, context và queue handoff |
-| `std_mutex_adapter.hpp` | Adapter baseline standard mutex |
-| `scoped_lock.hpp` | Scope guard dùng cùng explicit worker context |
-| `ttas_backoff_lock.hpp` | Biến thể bổ sung sau correctness gate |
+API `acquire(context)` / `release(context)`. MCS context chứa node và phải sống đủ đến hết release; từng lock/acquisition còn tồn tại dùng context riêng. Các `Basic*<...>` có SC mode cho tests; production aliases dùng acquire/release. Hooks được template hóa và production dùng no-op rỗng.
 
-Không tái sử dụng một MCS node cho hai acquisitions đang tồn tại đồng thời. Header implementations có thể tách thêm `.cpp` nếu cần, nhưng hot path của các biến thể phải có chính sách biên dịch nhất quán.
+Xem [thiết kế](../../../docs/design.md) và [tests](../../../tests/test_locks.cpp).

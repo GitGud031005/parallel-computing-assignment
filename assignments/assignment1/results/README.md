@@ -1,12 +1,9 @@
-# Kết quả thí nghiệm
+# Results và validation
 
-**Chưa có số liệu.** Các thư mục con được tạo sẵn để lưu dữ liệu thật theo [protocol](../docs/benchmarking.md):
+GitHub chỉ giữ README và thư mục trống dành sẵn. Raw data, metadata máy, validation logs, figures và report sinh ra được giữ cục bộ. Tóm tắt kiểm tra ở [verification.md](../docs/verification.md); không có liên kết tới file kết quả chưa upload.
 
-| Thư mục | Nội dung sẽ lưu |
-| --- | --- |
-| `platforms/` | `<platform_id>.json`: cấu hình phần cứng/phần mềm, atomic capabilities |
-| `raw/` | `<platform_id>/<run_id>/`: manifest, raw CSV, log, lỗi/timeout |
-| `processed/` | Bảng summary từ raw: median/Q1/Q3, throughput, speedup hợp lệ |
-| `figures/` | Hình cho báo cáo, có platform/config/run ID trong caption hoặc metadata |
+Sau khi chạy `verify.py`, thư mục output chứa logs/exit codes và `checks.json`. Trong lần chạy tham chiếu, ASan đầu thất bại do LeakSanitizer không đọc được `/proc task`; ASan+UBSan chạy lại thành công với detect_leaks=0, không phải chứng nhận leak-free.
 
-Giữ raw bất biến. Không điền kết quả suy đoán vào CSV; không dùng số minh họa trong report như dữ liệu đo thật. Không lấy tốc độ của container hỗ trợ soạn tài liệu làm đại diện laptop của người làm.
+`raw/<platform>/<run>/`: manifest/environment/raw.csv/completion. `processed/<run>/`: summary.csv và validation.json của dữ liệu. `figures/<run>/`: hình cho báo cáo. Dữ liệu reference lấy từ managed Linux environment, không đại diện laptop cá nhân của người nộp.
+
+Metadata chứa source/binary fingerprints và revision. Raw data không sửa tay. Smoke chỉ xác minh wiring, không dùng làm evidence performance. Lệnh README dùng `results-local/` và `validation-local/` từ gốc repo. ZIP nộp có thể chứa dữ liệu cần thiết; ZIP cũng không được push GitHub.

@@ -1,6 +1,6 @@
-# Thiết kế triển khai dự kiến
+# Thiết kế triển khai và memory ordering
 
-Tài liệu này là thiết kế để triển khai ở M1-M4, **chưa phải implementation đã được xác minh**. Kết hợp [slide notes](../../../docs/slide-notes.md), yêu cầu gốc và các contracts dưới đây. Mỗi thay đổi thuật toán phải cập nhật lập luận và test liên quan.
+Thiết kế này đã được cài đặt và đối chiếu bằng directed tests, SC reference, stress và các sanitizer chạy được. Kết quả ở [verification.md](verification.md), logs sinh cục bộ; kiểm thử hữu hạn không thay thế lập luận tính đúng. Kết hợp [slide notes](../../../docs/slide-notes.md), yêu cầu gốc và các contracts dưới đây. Mỗi thay đổi thuật toán phải cập nhật lập luận và test liên quan.
 
 ## 1. Công nghệ và ranh giới module
 
@@ -13,7 +13,7 @@ Tài liệu này là thiết kế để triển khai ở M1-M4, **chưa phải i
 
 ## 2. Contract cho locks
 
-Giao diện khái niệm thống nhất, tên cuối có thể điều chỉnh khi implementation bắt đầu:
+API thống nhất đang dùng:
 
 ```cpp
 using ThreadContext = /* context riêng của worker cho lock này */;
@@ -39,7 +39,7 @@ Load relaxed của TTAS chỉ giúp quyết định có nên thử, không tự 
 
 `tail` là atomic pointer tới node cuối. Mỗi node có atomic `next` và atomic `waiting`. Khởi tạo node trước khi publish; dùng vùng nhớ riêng cho mỗi worker và từng lock/context cần tồn tại đồng thời.
 
-| Bước | Memory order đề xuất | Lý do |
+| Bước | Memory order đã cài | Lý do |
 | --- | --- | --- |
 | Reset `node.next=nullptr`, `node.waiting=true` | relaxed, trước publish | Worker sở hữu context; chuẩn bị node cho lần acquire mới |
 | `tail.exchange(&node)` | acq_rel | Publish node; acquire từ lần unlock làm tail về null nếu queue rỗng |
@@ -65,14 +65,14 @@ MCS FIFO theo thứ tự tail exchange trong các giả định tiến triển p
 
 Contract: `participants > 0`, số participant cố định; mỗi worker tham gia đúng một lần trong mỗi phase. Không hỗ trợ drop/cancel ở custom barrier trong bản bắt buộc. Barrier chỉ bị hủy sau khi các workers dừng.
 
-State dự kiến:
+State đã cài đặt:
 
 - `const participants`: số thread tham gia.
 - Atomic `remaining`, khởi tạo bằng participants.
 - Atomic `global_sense`, khởi tạo false.
 - Context riêng của mỗi worker **cho từng barrier instance**, `local_sense=false` ban đầu.
 
-Thuật toán dự kiến:
+Thuật toán đang dùng:
 
 1. Đảo local sense.
 2. `remaining.fetch_sub(1, acq_rel)`; giá trị cũ bằng 1 cho biết đây là thread cuối.

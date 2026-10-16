@@ -1,24 +1,82 @@
 {
-  "schema_version": 1,
-  "status": "planned_not_executable_until_runner_is_implemented",
-  "description": "Small wiring check only. Not performance evidence.",
-  "threads": [1, 2, 3],
+  "schema_version": 2,
+  "purpose": "Wiring/functional validation only; too short for performance conclusions.",
+  "order_seed": 20261016,
   "warmup_repetitions": 0,
   "measured_repetitions": 1,
   "timeout_seconds": 30,
-  "locks": {
-    "implementations": ["tas", "ttas", "mcs", "std_mutex"],
-    "mode": "per_thread",
-    "iterations_per_thread": 100,
-    "prime_n": 97,
-    "outside_work": [0, 1]
-  },
-  "barriers": {
-    "implementations": ["sense_reversing", "std_barrier"],
-    "episodes": 1000
-  },
-  "counters": {
-    "implementations": ["mutex_tas", "mutex_ttas", "mutex_mcs", "mutex_std", "cas", "faa"],
-    "total_operations": 1000
-  }
+  "experiments": [
+    {
+      "name": "locks",
+      "suite": "locks",
+      "parameters": {
+        "implementation": [
+          "tas",
+          "ttas",
+          "mcs",
+          "std_mutex",
+          "ttas_backoff"
+        ],
+        "threads": [
+          1,
+          2,
+          3
+        ],
+        "mode": [
+          "per_thread"
+        ],
+        "prime_n": [
+          97
+        ],
+        "outside_work": [
+          0,
+          1
+        ],
+        "iterations_per_thread": [
+          100
+        ]
+      }
+    },
+    {
+      "name": "barriers",
+      "suite": "barriers",
+      "parameters": {
+        "implementation": [
+          "sense_reversing",
+          "std_barrier"
+        ],
+        "threads": [
+          1,
+          2,
+          3
+        ],
+        "episodes": [
+          1000
+        ]
+      }
+    },
+    {
+      "name": "counters",
+      "suite": "counters",
+      "parameters": {
+        "implementation": [
+          "mutex_tas",
+          "mutex_ttas",
+          "mutex_mcs",
+          "mutex_std",
+          "cas",
+          "faa",
+          "cas_backoff"
+        ],
+        "threads": [
+          1,
+          2,
+          3
+        ],
+        "total_operations": [
+          1001
+        ]
+      }
+    }
+  ]
 }

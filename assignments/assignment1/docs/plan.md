@@ -1,6 +1,10 @@
+> Trạng thái 16/10/2026: M0-M4 đã làm; M5 có reference study của managed Linux (không thay thí nghiệm máy cá nhân); M6 có PDF/source ZIP riêng và fresh-build validation. Người dùng yêu cầu GitHub giữ code, không upload slide/đề gốc. README Ass1 đã bổ sung hướng dẫn code/API/build/test/pipeline; generated outputs giữ cục bộ.
+
+> Kế hoạch gốc ngày 15/10 được giữ để truy vết. Trạng thái mới nhất xem README và [verification.md](verification.md); ma trận thực thi nằm trong config/benchmark_matrix.json. Lịch bên dưới là lịch dự kiến ban đầu, không phải ngày hoàn thành thực tế.
+
 # Kế hoạch thực hiện Assignment 1
 
-Ngày lập: **15/10/2026**, múi giờ **Asia/Ho_Chi_Minh (UTC+7)**. Phạm vi hiện tại: lập kế hoạch và dựng cấu trúc; implementation chưa bắt đầu. Đề gốc và tiêu chí đối chiếu ở [requirements.md](requirements.md).
+Ngày lập: **15/10/2026**, múi giờ **Asia/Ho_Chi_Minh (UTC+7)**. Phạm vi lúc lập kế hoạch: đọc tài liệu và dựng cấu trúc. Implementation, tests, reference experiments và báo cáo hiện đã hoàn tất; xem README và verification.md. Đề gốc và tiêu chí đối chiếu ở [requirements.md](requirements.md).
 
 ## 1. Kết quả cuối cần đạt
 
@@ -89,19 +93,20 @@ Mỗi buổi triển khai nên kết thúc bằng một phiên bản build đư�
 ## 5. Checklist theo dõi
 
 - [x] M0: đọc slide và đề; plan/structure.
-- [ ] M1: máy đo và compiler được xác nhận; công cụ PDF chọn xong.
-- [ ] M1: workload/harness/baseline có thể chạy.
-- [ ] M2: TAS và TTAS có tests.
-- [ ] M2: MCS đủ nhánh release và node lifetime tests.
-- [ ] M2: memory ordering được giải thích theo happens-before.
-- [ ] M3: barrier reusable, visibility, hai instance và odd participants.
-- [ ] M4: counter mutex/CAS/FAA đủ test.
-- [ ] Correctness gate: stress + sanitizer phù hợp + timeout không có lỗi chưa giải thích.
-- [ ] M5: pilot chốt, ma trận chính thực thi, metadata đủ các máy.
-- [ ] M5 bổ sung: so sánh TTAS/CAS backoff với bản thường.
-- [ ] M5: raw CSV, summary và biểu đồ tái lập được.
-- [ ] M6: PDF đủ yêu cầu L/B/C/X/S, nguồn trích dẫn đầy đủ.
-- [ ] M6: build/test từ fresh checkout và ZIP đã giải nén.
+- [x] M1: môi trường tham chiếu/compiler và công cụ PDF được xác nhận.
+- [x] M1: workload/harness/baseline có thể chạy.
+- [x] M2: TAS và TTAS có tests.
+- [x] M2: MCS đủ nhánh release và node lifetime tests.
+- [x] M2: memory ordering được giải thích theo happens-before.
+- [x] M3: barrier reusable, visibility, hai instance và odd participants.
+- [x] M4: counter mutex/CAS/FAA đủ test.
+- [x] Correctness gate: stress + sanitizer phù hợp; giới hạn LSan được ghi rõ.
+- [x] M5: pilot, reference matrix, raw CSV, summary và biểu đồ tái lập trong managed Linux.
+- [ ] M5/X1: chạy trên đủ các máy cá nhân thực sở hữu, cập nhật metadata/kết luận.
+- [x] M5 bổ sung: so sánh TTAS/CAS backoff với bản thường.
+- [x] M6: report PDF tham chiếu và source ZIP, nguồn và giới hạn đo được ghi rõ.
+- [x] M6: build/test từ source ZIP đã giải nén ở thư mục mới.
+- [x] Kiểm tra lại Release/UBSan/TSan, ba stress suites và 57 smoke cases; README Ass1 hướng dẫn code.
 - [ ] M6: kiểm tra PDF không còn TODO, tên/MSSV và ZIP đúng quy định thực tế.
 - [ ] Nộp LMS, kiểm tra file đã lên và lưu xác nhận.
 

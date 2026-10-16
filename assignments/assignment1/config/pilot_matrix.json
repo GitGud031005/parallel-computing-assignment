@@ -1,0 +1,149 @@
+{
+  "schema_version": 2,
+  "purpose": "Pilot with frozen candidate workloads; diagnostic only, not final performance evidence.",
+  "order_seed": 20261016,
+  "warmup_repetitions": 1,
+  "measured_repetitions": 3,
+  "timeout_seconds": 60,
+  "experiments": [
+    {
+      "name": "prime-97",
+      "suite": "locks",
+      "parameters": {
+        "implementation": [
+          "std_mutex",
+          "mcs"
+        ],
+        "threads": [
+          1,
+          8
+        ],
+        "mode": [
+          "fixed_total"
+        ],
+        "prime_n": [
+          97
+        ],
+        "outside_work": [
+          0
+        ],
+        "total_operations": [
+          200000
+        ]
+      }
+    },
+    {
+      "name": "prime-997",
+      "suite": "locks",
+      "parameters": {
+        "implementation": [
+          "std_mutex",
+          "mcs"
+        ],
+        "threads": [
+          1,
+          8
+        ],
+        "mode": [
+          "fixed_total"
+        ],
+        "prime_n": [
+          997
+        ],
+        "outside_work": [
+          0
+        ],
+        "total_operations": [
+          20000
+        ]
+      }
+    },
+    {
+      "name": "prime-10007",
+      "suite": "locks",
+      "parameters": {
+        "implementation": [
+          "std_mutex",
+          "mcs"
+        ],
+        "threads": [
+          1,
+          8
+        ],
+        "mode": [
+          "fixed_total"
+        ],
+        "prime_n": [
+          10007
+        ],
+        "outside_work": [
+          0
+        ],
+        "total_operations": [
+          2000
+        ]
+      }
+    },
+    {
+      "name": "per-thread",
+      "suite": "locks",
+      "parameters": {
+        "implementation": [
+          "std_mutex",
+          "mcs"
+        ],
+        "threads": [
+          1,
+          8
+        ],
+        "mode": [
+          "per_thread"
+        ],
+        "prime_n": [
+          997
+        ],
+        "outside_work": [
+          0,
+          8
+        ],
+        "iterations_per_thread": [
+          5000
+        ]
+      }
+    },
+    {
+      "name": "barrier",
+      "suite": "barriers",
+      "parameters": {
+        "implementation": [
+          "sense_reversing",
+          "std_barrier"
+        ],
+        "threads": [
+          1,
+          8
+        ],
+        "episodes": [
+          20000
+        ]
+      }
+    },
+    {
+      "name": "counter",
+      "suite": "counters",
+      "parameters": {
+        "implementation": [
+          "faa",
+          "mutex_mcs"
+        ],
+        "threads": [
+          1,
+          8
+        ],
+        "total_operations": [
+          1000000
+        ]
+      }
+    }
+  ]
+}

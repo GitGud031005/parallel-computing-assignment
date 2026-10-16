@@ -1,60 +1,193 @@
 {
-  "schema_version": 1,
-  "status": "planned_not_executable_until_runner_is_implemented",
-  "description": "Initial experiment design. Calibrate workloads in pilot, then save resolved per-platform manifest before measured runs.",
-  "timezone": "Asia/Ho_Chi_Minh",
-  "thread_candidates": [1, 2, 3, 4, 8, "physical_cores", "logical_cpus", "2*logical_cpus"],
-  "thread_resolution": "Resolve from real platform, unique, positive, sorted. Label oversubscription separately and allow it only in bounded runs.",
+  "schema_version": 2,
+  "purpose": "Reference performance study on the accessible managed Linux environment; do not label as the student laptop. Workloads frozen across implementations and P within each series.",
+  "order_seed": 20261016,
   "warmup_repetitions": 2,
   "measured_repetitions": 7,
-  "randomize_order": true,
-  "order_seed": 20261015,
-  "affinity": "none",
-  "build_type": "Release",
-  "sanitizers": false,
-  "lto": false,
-  "pilot": {
-    "reference_target_seconds": [0.5, 2.0],
-    "measured_repetitions": 3,
-    "locks_iterations_per_thread_initial": 10000,
-    "locks_total_operations_initial": 100000,
-    "barrier_episodes_initial": 100000,
-    "counter_total_operations_initial": 1000000,
-    "freeze_workload_across_implementations": true,
-    "freeze_fixed_total_across_thread_counts": true,
-    "timeout_seconds_initial": 120
-  },
-  "locks": {
-    "required_implementations": ["tas", "ttas", "mcs", "std_mutex"],
-    "modes": ["per_thread", "fixed_total"],
-    "core_prime_n": [997],
-    "core_outside_work": [0, 1, 2, 4, 8],
-    "primary_metric": "program_elapsed_ns",
-    "sensitivity": {
-      "prime_n": [97, 10007],
-      "outside_work": [0, 4],
-      "mode": "fixed_total"
+  "timeout_seconds": 60,
+  "experiments": [
+    {
+      "name": "core-fixed_total",
+      "suite": "locks",
+      "parameters": {
+        "implementation": [
+          "tas",
+          "ttas",
+          "mcs",
+          "std_mutex",
+          "ttas_backoff"
+        ],
+        "threads": [
+          1,
+          2,
+          3,
+          4,
+          8
+        ],
+        "mode": [
+          "fixed_total"
+        ],
+        "prime_n": [
+          997
+        ],
+        "outside_work": [
+          0,
+          1,
+          2,
+          4,
+          8
+        ],
+        "total_operations": [
+          20000
+        ]
+      }
+    },
+    {
+      "name": "core-per_thread",
+      "suite": "locks",
+      "parameters": {
+        "implementation": [
+          "tas",
+          "ttas",
+          "mcs",
+          "std_mutex",
+          "ttas_backoff"
+        ],
+        "threads": [
+          1,
+          2,
+          3,
+          4,
+          8
+        ],
+        "mode": [
+          "per_thread"
+        ],
+        "prime_n": [
+          997
+        ],
+        "outside_work": [
+          0,
+          1,
+          2,
+          4,
+          8
+        ],
+        "iterations_per_thread": [
+          5000
+        ]
+      }
+    },
+    {
+      "name": "sensitivity-97",
+      "suite": "locks",
+      "parameters": {
+        "implementation": [
+          "tas",
+          "ttas",
+          "mcs",
+          "std_mutex",
+          "ttas_backoff"
+        ],
+        "threads": [
+          1,
+          2,
+          3,
+          4,
+          8
+        ],
+        "mode": [
+          "fixed_total"
+        ],
+        "prime_n": [
+          97
+        ],
+        "outside_work": [
+          0,
+          4
+        ],
+        "total_operations": [
+          200000
+        ]
+      }
+    },
+    {
+      "name": "sensitivity-10007",
+      "suite": "locks",
+      "parameters": {
+        "implementation": [
+          "tas",
+          "ttas",
+          "mcs",
+          "std_mutex",
+          "ttas_backoff"
+        ],
+        "threads": [
+          1,
+          2,
+          3,
+          4,
+          8
+        ],
+        "mode": [
+          "fixed_total"
+        ],
+        "prime_n": [
+          10007
+        ],
+        "outside_work": [
+          0,
+          4
+        ],
+        "total_operations": [
+          2000
+        ]
+      }
+    },
+    {
+      "name": "barriers",
+      "suite": "barriers",
+      "parameters": {
+        "implementation": [
+          "sense_reversing",
+          "std_barrier"
+        ],
+        "threads": [
+          1,
+          2,
+          3,
+          4,
+          8
+        ],
+        "episodes": [
+          20000
+        ]
+      }
+    },
+    {
+      "name": "counters",
+      "suite": "counters",
+      "parameters": {
+        "implementation": [
+          "mutex_tas",
+          "mutex_ttas",
+          "mutex_mcs",
+          "mutex_std",
+          "cas",
+          "faa",
+          "cas_backoff"
+        ],
+        "threads": [
+          1,
+          2,
+          3,
+          4,
+          8
+        ],
+        "total_operations": [
+          1000000
+        ]
+      }
     }
-  },
-  "barriers": {
-    "required_implementations": ["sense_reversing", "std_barrier"],
-    "useful_work_between_episodes": false,
-    "primary_metric": "episodes_per_second",
-    "formula": "episodes / (worker_elapsed_ns / 1e9)",
-    "multiply_by_threads_for_episode_metric": false
-  },
-  "counters": {
-    "required_implementations": ["mutex_tas", "mutex_ttas", "mutex_mcs", "mutex_std", "cas", "faa"],
-    "mode": "fixed_total",
-    "value_type": "uint64_t",
-    "increment_returns": "old_value",
-    "atomic_memory_order": "relaxed",
-    "primary_metric": "program_elapsed_ns"
-  },
-  "extensions": {
-    "enabled_by_default": false,
-    "locks": ["ttas_backoff"],
-    "counters": ["cas_backoff"],
-    "backoff_parameters": "Choose explicit policy, initial and maximum delay during pilot; store in run manifest."
-  }
+  ]
 }

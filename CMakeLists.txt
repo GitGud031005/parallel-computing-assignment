@@ -21,4 +21,5 @@ if(NOT PC_HAS_STD_BARRIER)
     message(FATAL_ERROR "A C++20 compiler and standard library with std::barrier are required. See README.md.")
 endif()
 
+include(CTest)
 add_subdirectory(assignments/assignment1)

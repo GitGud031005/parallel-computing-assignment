@@ -69,3 +69,9 @@ Kết quả tính toán phải được sử dụng để compiler không loại
 - Công cụ xuất PDF báo cáo: ưu tiên công cụ người làm đã dùng được; chọn và kiểm tra sớm trong M1.
 
 Các điểm này chưa chặn việc đọc tài liệu và tổ chức repo, nhưng phải được chốt trước khi chạy phép đo chính hoặc nộp bài.
+
+## Trạng thái đối chiếu sau triển khai
+
+L1-L5, B1-B4, C1-C3: đã có code, tests, dữ liệu và báo cáo tham chiếu. S2: có PDF, source và script đóng gói tái lập được. O1: không làm, đúng phạm vi tùy chọn. X1: mới có dữ liệu của managed platform đang truy cập; chưa có quyền chạy trên những máy cá nhân khác của người nộp. S1/S3 và định danh bài nộp do người nộp đối chiếu với yêu cầu lớp/LMS; chưa thực hiện nộp LMS.
+
+Xem [verification.md](verification.md) để biết phạm vi các bằng chứng và giới hạn chính xác.

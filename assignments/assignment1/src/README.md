@@ -1,5 +1,5 @@
-# Source implementation
+# Source files
 
-Chưa có `.cpp`. Bắt đầu M1 với `workload.cpp` theo [benchmarking.md](../docs/benchmarking.md), rồi tạo implementation cho các common components cần thiết.
+`workload.cpp`: naive is_prime thử divisor từ 2 tới N-1, xử lý N<2. `environment.cpp`: executable pc_environment báo compiler-mode fingerprint, standard library và atomic lock-free capabilities.
 
-Entry points cho phép đo nằm trong `../benchmarks/`, entry points cho correctness trong `../tests/`. Giữ thư viện thuật toán độc lập với logging/CSV và command-line parsing.
+Workload tắt IPO/LTO và gọi từ translation unit khác; các call sites optimized được lưu trong results/validation. Entry points của ba phép đo ở ../benchmarks/.

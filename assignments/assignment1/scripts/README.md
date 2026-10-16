@@ -1,13 +1,5 @@
-# Scripts dự kiến
+# Reproducibility tools
 
-Chưa có script chạy được. Tạo theo thứ tự M1 rồi M5-M6, ưu tiên Python để dùng được cả Linux/WSL và Windows khi toolchain tương thích.
+`collect_environment.py` thu metadata và đối chiếu C++/CMake digest. `verify.py` build/test nhiều modes, lưu logs và checks; --stress chạy thêm ba C++ suites. `run_benchmarks.py` chạy matrix tuần tự, seeded order, warmups/reps, timeout và raw CSV. `summarize.py` kiểm manifest/checksum rồi tính median/IQR/throughput/speedup. `plot_results.py` xuất biểu đồ. `create_report.py` tạo PDF/Markdown từ dữ liệu đã kiểm. `package_submission.py` tạo ZIP theo allowlist kèm SHA-256 manifest.
 
-| Script sẽ tạo | Trách nhiệm |
-| --- | --- |
-| `collect_environment.py` | Platform ID, CPU/core topology, OS/compiler/stdlib/atomic metadata |
-| `run_benchmarks.py` | Resolve matrix, pilot manifest, seeded order, warmup/reps, timeout và raw CSV |
-| `summarize.py` | Kiểm schema/counts; median, Q1/Q3, metrics dẫn xuất từ raw data |
-| `plot_results.py` | Biểu đồ có đơn vị/platform/workload, sinh từ summary |
-| `package_submission.py` | Kiểm PDF/source tồn tại, tạo ZIP từ allowlist, không gói build/cache |
-
-Khi implementation xong mới ghi lệnh thật vào README gốc. Ghi dependency plotting và version khi chọn thư viện; dữ liệu gốc là bất biến, không sửa bằng tay để làm đẹp plot.
+Các script dùng --help; lệnh toàn pipeline ở [README Ass1](../README.md). Requirements chỉ cần cho plotting/PDF. PDF cần font Unicode DejaVu hoặc Arial; --font-dir hỗ trợ thư mục font ngoài. Raw samples bất biến; output run phải chưa tồn tại. Mọi failed/timeout row được giữ, không loại outlier theo thứ hạng algorithm.

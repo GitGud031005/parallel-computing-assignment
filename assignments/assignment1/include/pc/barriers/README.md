@@ -1,5 +1,5 @@
-# Barrier headers dự kiến
+# Reusable barriers
 
-Chưa có implementation. M3 sẽ tạo `sense_reversing_barrier.hpp` và `std_barrier_adapter.hpp` theo [design.md](../../../docs/design.md).
+`sense_reversing_barrier.hpp` chứa custom sense-reversing và SC reference; `std_barrier_adapter.hpp` chứa C++20 baseline. API `arrive_and_wait(context)`, participant count cố định và dương.
 
-Context local sense thuộc từng worker và từng custom barrier instance. Participant count cố định; không hỗ trợ drop trong bản bắt buộc. Tách state của start gate khỏi barrier đang test/đo.
+Context local sense riêng cho từng worker và từng instance. Không hỗ trợ drop/cancel; hủy barrier sau join. Xem [thiết kế](../../../docs/design.md) và [tests](../../../tests/test_barriers.cpp).

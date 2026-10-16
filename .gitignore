@@ -18,4 +18,28 @@ __pycache__/
 /references/local/
 *.zip
 
-# Keep experiment CSV/JSON and report sources versioned intentionally.
+# Course originals stay local; GitHub contains our code and written notes only.
+*.pdf
+*.ppt
+*.pptx
+*.odp
+/slides/
+/materials/
+/assignment-statements/
+
+# Generated experiment/report outputs stay local.
+/assignments/assignment1/results/*/
+!/assignments/assignment1/results/figures/
+!/assignments/assignment1/results/platforms/
+!/assignments/assignment1/results/processed/
+!/assignments/assignment1/results/raw/
+/assignments/assignment1/results/figures/*
+/assignments/assignment1/results/platforms/*
+/assignments/assignment1/results/processed/*
+/assignments/assignment1/results/raw/*
+!/assignments/assignment1/results/*/.gitkeep
+/assignments/assignment1/report/report.md
+*.log
+
+/results-local/
+/validation-local/

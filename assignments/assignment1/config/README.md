@@ -1,7 +1,5 @@
-# Cấu hình thí nghiệm
+# Executable experiment matrices
 
-[benchmark_matrix.json](benchmark_matrix.json) mô tả core/sensitivity/extensions; [smoke_matrix.json](smoke_matrix.json) chỉ dùng kiểm wiring khi runner đã có. Cả hai hiện là **đặc tả**, chưa có runner thực thi.
+Schema v2 có `experiments`, mỗi experiment chứa `suite`, `name`, `parameters` với các list giá trị cụ thể; runner lấy Cartesian product. `benchmark_matrix.json` là reference sweep: 395 configurations, 2 warmups và 7 measured reps = 3555 rows. `smoke_matrix.json`: 57 short functional samples, không dùng làm kết luận performance.
 
-Chuỗi `physical_cores`, `logical_cpus`, `2*logical_cpus` là token cần được collector/runner resolve từ máy thật; không đưa nguyên chuỗi này cho executable C++.
-
-Các initial workload trong phần pilot cần hiệu chỉnh trước phép đo chính. Lưu các số cuối vào manifest của run, giữ nguyên giữa algorithms trong cùng comparison và giữa P ở fixed-total. Đọc [benchmarking.md](../docs/benchmarking.md) trước khi thay số.
+Reference threads [1,2,3,4,8] phù hợp giới hạn quota 8 CPU của môi trường đo. Khi chạy máy khác, chỉnh list theo physical/logical CPUs thực có và ghi điều kiện oversubscription. I/K/E cố định giữa algorithms và P trong cùng series; không hiệu chỉnh riêng để làm đẹp kết quả một algorithm.
