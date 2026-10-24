@@ -8,13 +8,15 @@ from collect_environment import ROOT, ASSIGNMENT, kernel_digest
 
 
 def package(output):
-    required = [ASSIGNMENT / "report/report.pdf", ASSIGNMENT / "report/report.md",
+    required = [ASSIGNMENT / "report/Assignment1_Report_EN.pdf",
                 ASSIGNMENT / "include/pc/locks/mcs_lock.hpp", ASSIGNMENT / "tests/test_locks.cpp"]
     for path in required:
         if not path.is_file(): raise ValueError(f"missing required deliverable: {path.relative_to(ROOT)}")
-    allowed = [ROOT / "README.md", ROOT / "CMakeLists.txt", ROOT / ".editorconfig", ROOT / ".gitignore"]
-    for folder in [ASSIGNMENT, ROOT / "docs", ROOT / "references"]:
-        allowed.extend(p for p in folder.rglob("*") if p.is_file())
+    # The statement asks for the PDF report and the relevant C++ source; internal notes stay out.
+    allowed = [ROOT / "CMakeLists.txt", ROOT / ".editorconfig", ASSIGNMENT / "README.md",
+               ASSIGNMENT / "CMakeLists.txt", ASSIGNMENT / "report/Assignment1_Report_EN.pdf"]
+    for folder in ["include", "src", "benchmarks", "tests", "config", "scripts", "results"]:
+        allowed.extend(p for p in (ASSIGNMENT / folder).rglob("*") if p.is_file())
     files = []
     for path in sorted(set(allowed)):
         relative = path.relative_to(ROOT)

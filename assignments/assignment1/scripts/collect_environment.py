@@ -19,7 +19,9 @@ def sha256(path):
 def kernel_digest():
     paths = list(ASSIGNMENT.rglob("*.cpp")) + list(ASSIGNMENT.rglob("*.hpp"))
     paths += [ROOT / "CMakeLists.txt", ASSIGNMENT / "CMakeLists.txt"]
-    catalog = "".join(f"{p.relative_to(ROOT).as_posix()}:{sha256(p)}\n" for p in sorted(paths))
+    # Must match CMake's case-sensitive list(SORT); WindowsPath ordering is case-insensitive.
+    paths.sort(key=lambda p: p.as_posix())
+    catalog = "".join(f"{p.relative_to(ROOT).as_posix()}:{sha256(p)}\n" for p in paths)
     return hashlib.sha256(catalog.encode()).hexdigest()
 
 
@@ -42,6 +44,27 @@ def executable(directory, name):
     return Path(directory) / (name + (".exe" if os.name == "nt" else ""))
 
 
+def windows_hardware():
+    if os.name != "nt":
+        return {}
+    script = ("$p = Get-CimInstance Win32_Processor | Select-Object -First 1; "
+              "$b = Get-CimInstance -Namespace root/wmi -ClassName BatteryStatus -ErrorAction SilentlyContinue | Select-Object -First 1; "
+              "[pscustomobject]@{cpu=$p.Name; cores=$p.NumberOfCores; "
+              "memory=(Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory; "
+              "ac=if ($b) { [bool]$b.PowerOnline } else { $null }} | ConvertTo-Json -Compress")
+    raw = command(["powershell", "-NoProfile", "-Command", script])
+    info = json.loads(raw) if raw else {}
+    info["power_scheme"] = command(["powercfg", "/getactivescheme"])
+    return info
+
+
+def power_mode(windows):
+    if not windows:
+        return "not controlled/unknown"
+    ac = {True: "AC power", False: "battery", None: "AC state unknown"}[windows.get("ac")]
+    return f"{windows.get('power_scheme') or 'power scheme unknown'}; {ac}"
+
+
 def collect(bin_dir, platform_id, revision="unrecorded"):
     bin_dir = Path(bin_dir).resolve()
     capabilities = json.loads(subprocess.check_output([str(executable(bin_dir, "pc_environment"))], text=True))
@@ -53,7 +76,9 @@ def collect(bin_dir, platform_id, revision="unrecorded"):
         if package is not None and core is not None:
             physical.add((package, core))
     cpuinfo = read("/proc/cpuinfo") or ""
-    model = next((line.split(":", 1)[1].strip() for line in cpuinfo.splitlines() if line.startswith("model name")), platform.processor())
+    windows = windows_hardware()
+    model = next((line.split(":", 1)[1].strip() for line in cpuinfo.splitlines() if line.startswith("model name")),
+                 windows.get("cpu") or platform.processor())
     cache_path = next((parent / "CMakeCache.txt" for parent in bin_dir.parents if (parent / "CMakeCache.txt").exists()), None)
     cache = {}
     if cache_path:
@@ -75,9 +100,10 @@ def collect(bin_dir, platform_id, revision="unrecorded"):
         "machine": platform.machine(), "os": platform.platform(),
         "cpu_model": model, "os_logical_cpus": os.cpu_count(),
         "affinity_cpus": affinity, "affinity_logical_cpus": len(affinity) if affinity else os.cpu_count(),
-        "physical_cores_in_affinity": len(physical) if physical else None,
+        "physical_cores_in_affinity": len(physical) if physical else windows.get("cores"),
         "cpu_quota": read("/sys/fs/cgroup/cpu.max"),
         "memory_limit_bytes": read("/sys/fs/cgroup/memory.max"),
+        "memory_total_bytes": windows.get("memory"),
         "meminfo": read("/proc/meminfo"),
         "cpu_stat_before": read("/sys/fs/cgroup/cpu.stat"),
         "virtualization": command(["systemd-detect-virt"]),
@@ -85,9 +111,8 @@ def collect(bin_dir, platform_id, revision="unrecorded"):
         "cmake_version": command([cache.get("CMAKE_COMMAND", "cmake"), "--version"]),
         "build_cache": cache,
         "affinity_policy": "none; inherits process affinity",
-        "power_mode": "not controlled/unknown on managed environment",
-        "alignment_bytes": 64,
-        "provenance_note": "Reference execution environment; not a measurement of the student's personal computer."
+        "power_mode": power_mode(windows),
+        "alignment_bytes": 64
     }
 
 

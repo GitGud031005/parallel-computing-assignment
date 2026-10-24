@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "purpose": "Reference performance study on the accessible managed Linux environment; do not label as the student laptop. Workloads frozen across implementations and P within each series.",
+  "purpose": "Performance study on the submitter's laptop (Intel Core i7-13620H, 6P+4E cores, 16 logical CPUs). Threads cover 1-4, the 6 performance cores, 8, the 10 physical cores, 12 and 14. P=15/16 is measured separately in saturation_matrix.json because spinning MCS/barrier waiters then occupy every logical CPU and preempted queue successors stall for whole scheduler slices (single samples exceeded 60 s). Workloads frozen across implementations and P within each series.",
   "order_seed": 20261016,
   "warmup_repetitions": 2,
   "measured_repetitions": 7,
@@ -22,7 +22,11 @@
           2,
           3,
           4,
-          8
+          6,
+          8,
+          10,
+          12,
+          14
         ],
         "mode": [
           "fixed_total"
@@ -58,7 +62,11 @@
           2,
           3,
           4,
-          8
+          6,
+          8,
+          10,
+          12,
+          14
         ],
         "mode": [
           "per_thread"
@@ -94,7 +102,11 @@
           2,
           3,
           4,
-          8
+          6,
+          8,
+          10,
+          12,
+          14
         ],
         "mode": [
           "fixed_total"
@@ -127,7 +139,11 @@
           2,
           3,
           4,
-          8
+          6,
+          8,
+          10,
+          12,
+          14
         ],
         "mode": [
           "fixed_total"
@@ -157,7 +173,11 @@
           2,
           3,
           4,
-          8
+          6,
+          8,
+          10,
+          12,
+          14
         ],
         "episodes": [
           20000
@@ -182,7 +202,11 @@
           2,
           3,
           4,
-          8
+          6,
+          8,
+          10,
+          12,
+          14
         ],
         "total_operations": [
           1000000

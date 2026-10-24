@@ -1,20 +1,22 @@
-"""Generate the Vietnamese PDF and Markdown report from real, validated measurements."""
+"""Generate the English PDF and Markdown report from real, validated measurements."""
 import argparse
 import csv
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from html import escape
 import json
 import os
 from pathlib import Path
 
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Image, Preformatted
+
+PDF_NAME = "Assignment1_Report_EN.pdf"
+FOOTER = "Parallel Computing | Assignment 1 | GitGud031005 | English edition"
 
 
 def fonts(directory=None):
@@ -45,11 +47,11 @@ class Report:
 
     def heading(self, text, level=1):
         style = "PCTitle" if level == 0 else "PCH1" if level == 1 else "PCH2"
-        self.story.append(Paragraph(escape(text), self.styles[style]))
-        self.md.append("#" * (level + 1) + " " + text + "\n")
+        self.story.append(Paragraph(escape(text).replace("\n", "<br/>"), self.styles[style]))
+        self.md.append("#" * (level + 1) + " " + text.replace("\n", " ") + "\n")
 
-    def paragraph(self, text):
-        self.story.append(Paragraph(escape(text), self.styles["PCBody"]))
+    def paragraph(self, text, small=False):
+        self.story.append(Paragraph(escape(text).replace("\n", "<br/>"), self.styles["PCSmall" if small else "PCBody"]))
         self.md.append(text + "\n")
 
     def table(self, headers, rows, widths=None):
@@ -83,17 +85,18 @@ class Report:
 
     def save(self):
         self.output.mkdir(parents=True, exist_ok=True)
-        (self.output / "report.md").write_text("\n".join(self.md))
+        (self.output / "report.md").write_text("\n".join(self.md), encoding="utf-8")
         def page(canvas, doc):
             canvas.setStrokeColor(colors.HexColor("#b8ccd6"))
             canvas.line(42, 42, A4[0] - 42, 42)
             canvas.setFont("Body", 7)
             canvas.setFillColor(colors.HexColor("#526671"))
-            canvas.drawString(42, 28, "Parallel Computing | Assignment 1 | GitGud031005")
+            canvas.drawString(42, 28, FOOTER)
             canvas.drawRightString(A4[0] - 42, 28, str(doc.page))
-        document = SimpleDocTemplate(str(self.output / "report.pdf"), pagesize=A4,
+        document = SimpleDocTemplate(str(self.output / PDF_NAME), pagesize=A4,
                                      rightMargin=42, leftMargin=42, topMargin=42, bottomMargin=55,
-                                     title="Parallel Computing - Assignment 1", author="GitGud031005")
+                                     title="Parallel Computing Assignment 1 - Implementation and Experiments",
+                                     author="GitGud031005")
         document.build(self.story, onFirstPage=page, onLaterPages=page)
 
 
@@ -103,136 +106,169 @@ def generate(args):
     env = json.loads((args.run_dir / "environment.json").read_text())
     measured = json.loads((args.summary.parent / "validation.json").read_text())
     checks = json.loads(args.checks.read_text())
-    if measured["failed_samples"] or not measured["all_groups_complete"]: raise ValueError("incomplete performance data")
+    if measured["failed_measured_samples"] or not measured["all_groups_complete"]: raise ValueError("incomplete performance data")
     if checks["kernel_source_sha256"] != manifest["source_sha256"]: raise ValueError("tests and benchmark source mismatch")
     if any(c["status"] == "failed" for c in checks["checks"]): raise ValueError("unresolved validation failure")
     rows = list(csv.DictReader(args.summary.open()))
     find = lambda **fields: [r for r in rows if all(r.get(k) == str(v) for k, v in fields.items())]
+    saturation = list(csv.DictReader(args.saturation.open())) if args.saturation else []
+
+    def saturation_table(suite, metric, label, scale=1.0):
+        data = [r for r in saturation if r["suite"] == suite]
+        if not data: return
+        columns = sorted({int(r["threads"]) for r in data})
+        digits = 1 if scale > 1 else 0
+        number = lambda r, q: f"{float(r[q + '_' + metric]) / scale:,.{digits}f}"
+        cell = lambda r: f"{number(r, 'median')} [{number(r, 'q1')}-{number(r, 'q3')}]"
+        body = [[impl] + [next((cell(r) for r in data if r["implementation"] == impl and int(r["threads"]) == p), "") for p in columns]
+                for impl in sorted({r["implementation"] for r in data})]
+        doc.table([label] + [f"P={p}" for p in columns], body, [3.4 * cm] + [14.0 * cm / len(columns)] * len(columns))
+    median = lambda r: float(r["median_program_ms"])
     peak = max(int(r["threads"]) for r in rows)
+    threads = sorted({int(r["threads"]) for r in rows})
     fmt = lambda x: f"{float(x):,.3f}"
+    matrix = manifest["matrix"]
+    experiments = {e["name"]: e["parameters"] for e in matrix["experiments"]}
+    core = experiments["core-fixed_total"]
     doc = Report(args.output)
-    date = datetime.fromisoformat(env["timestamp_utc"]).astimezone(timezone(timedelta(hours=7))).strftime("%d/%m/%Y")
+    date = datetime.fromisoformat(env["timestamp_utc"]).strftime("%d %B %Y")
+    cores, logical = env["physical_cores_in_affinity"], env["os_logical_cpus"]
+    memory = f"{int(env['memory_total_bytes']) / 2**30:.1f} GiB RAM" if env.get("memory_total_bytes") else "memory not recorded"
+    platform = f"{env['cpu_model']} ({cores} physical cores, {logical} logical CPUs, {memory})"
+    if args.platform_note: platform += f"; {args.platform_note}"
 
     doc.heading("Parallel Computing\nAssignment 1", 0)
-    doc.paragraph(f"Báo cáo triển khai và thực nghiệm | {date} | Repository: GitGud031005/parallel-computing-assignment")
-    doc.heading("Phạm vi và kết quả bàn giao", 1)
-    doc.paragraph("Bài làm triển khai đầy đủ ba phần shared-memory bắt buộc bằng C++20: TAS/TTAS/MCS mutex locks, Sense-Reversing Barrier và concurrent counters dùng mutex, compare-and-swap, fetch-and-add. Standard mutex và standard barrier làm đối chứng. Có thêm TTAS/CAS exponential backoff để quan sát trade-off. Distributed MPI-3 RMA là phần tùy chọn và không triển khai trong bản này.")
-    doc.table(["Yêu cầu từ đề [1]", "Sản phẩm và bằng chứng"], [
-        ["Locks và workload prime", "3 custom locks + std::mutex + TTAS-backoff; cùng naive is_prime và OUTSIDE_WORK"],
-        ["Barrier reusable", "Sense-Reversing + std::barrier; episode/s toàn cục, không useful work giữa episodes"],
-        ["Counters", "4 lock-based counters + CAS + FAA + CAS-backoff; trả old value, đọc dưới cùng cơ chế bảo vệ"],
-        ["Correctness / scalability", "Source, tests định hướng interleaving, SC đối chiếu, log kiểm tra, raw CSV, median/IQR, biểu đồ"],
-        ["Báo cáo và source ZIP", "report.pdf, report.md, CMake, headers/source/tests/scripts/config và dữ liệu thí nghiệm"]
+    doc.paragraph(f"Implementation and experimental report | Measurements: {date}\nRepository: GitGud031005/parallel-computing-assignment")
+    doc.heading("Scope and deliverables", 1)
+    doc.paragraph("The implementation covers all three required shared-memory parts in C++20: TAS/TTAS/MCS mutex locks, a reusable Sense-Reversing Barrier, and concurrent counters using mutexes, compare-and-swap (CAS), and fetch-and-add (FAA). Standard mutex/barrier implementations provide comparison baselines. TTAS/CAS exponential backoff are additional experiments. Optional MPI-3 one-sided RMA is not implemented.")
+    doc.table(["Requirement", "Implementation / evidence"], [
+        ["Locks and prime workload", "TAS, TTAS, MCS, std::mutex, TTAS-backoff; identical naive is_prime and outside-work contract."],
+        ["Reusable barrier", "Sense reversal and std::barrier; global episodes per second without useful work between episodes."],
+        ["Counters", "Four mutex counters, CAS, FAA, CAS-backoff; increments return the previous value."],
+        ["Correctness and scaling", "Directed tests, SC reference variants, stress runs, raw records, median/IQR plots and reproducible scripts."]
     ], [4.8 * cm, 12.6 * cm])
-    doc.paragraph("Phép đo trong báo cáo là dữ liệu thật từ môi trường Linux được cấp cho phiên làm việc này. Đây không phải laptop cá nhân của sinh viên. Danh sách các máy cá nhân đang sở hữu chưa được cung cấp; yêu cầu đo trên những máy đó cần thực hiện bằng cùng scripts trước khi người nộp chốt báo cáo theo điều kiện của lớp. Không thay thế bằng kết quả phần cứng giả định.")
-    doc.paragraph(f"Run ID: {manifest['run_id']}. Revision mã triển khai: {manifest['revision']}. Kernel/build source SHA-256: {manifest['source_sha256']}. Mỗi executable và raw sample đều lưu fingerprint để phát hiện binary cũ.")
+    doc.paragraph(f"All measurements were taken on the submitter's own laptop: {platform}. This is the only shared-memory platform used in the study.")
+    doc.paragraph(f"Run: {manifest['run_id']}. Revision: {manifest['revision']}. Kernel/build SHA-256: {manifest['source_sha256']}", small=True)
 
-    doc.page(); doc.heading("1. Memory model và mutex locks")
-    doc.paragraph("Cache coherence không tự đảm bảo quan sát đúng giữa nhiều biến. C++ data race trên dữ liệu không atomic dẫn tới undefined behavior. Lock cần bảo vệ cả mutual exclusion và khả năng nhìn thấy payload của owner trước đó. Release khi unlock đồng bộ với acquire nhận publication tương ứng; relaxed polling chỉ là tối ưu chờ, không phải quyền vào critical section [2].")
-    doc.table(["Lock", "Cơ chế", "Ordering và progress"], [
-        ["TAS", "atomic_flag test_and_set lặp lại", "Acquire RMW thành công; release clear. Central RMW, không FIFO."],
-        ["TTAS", "Load khi cờ bận, sau đó exchange", "Polling relaxed; exchange acquire; store release. Giảm RMW lúc đang chờ, vẫn có tranh chấp lúc mở khóa."],
-        ["MCS", "Queue node riêng cho mỗi worker/context", "FIFO theo tail exchange; chờ trên cờ riêng. Owner bị preempt vẫn có thể chặn queue."],
-        ["std::mutex", "Standard library adapter", "Dùng cùng workload/harness; đây là baseline chứ không phải giả định cùng cơ chế spin."]
-    ], [2.4 * cm, 5.4 * cm, 9.6 * cm])
-    doc.heading("MCS: hai đường trao quyền và nhánh dễ sai", 2)
-    doc.paragraph("Node có atomic next/waiting; tail là atomic pointer. Context không copy/move trong lúc dùng và sống đến sau release. Worker reset node trước tail.exchange(acq_rel), nối predecessor.next bằng release-store rồi acquire-load waiting. Predecessor release-store waiting=false cho successor. Chuỗi này truyền payload qua handoff.")
-    doc.paragraph("Nếu next còn null, owner thử strong CAS tail từ chính node của mình về null. CAS thành công có release semantics; lần tail.exchange(acq_rel) tiếp theo nhận null sẽ acquire publication của owner cũ. Đây là đường queue-rỗng, phải được xét riêng với handoff có successor.")
-    doc.paragraph("Nếu CAS thất bại, successor đã đổi tail nhưng có thể chưa nối next. Owner phải chờ next xuất hiện rồi handoff. Dùng strong CAS vì weak CAS có thể thất bại giả ngay khi chưa có successor, khiến owner chờ vô hạn. Expected là biến pointer riêng để CAS không ghi đè định danh node cần unlock. Test hook giữ successor đúng tại gap này và chỉ mở sau khi owner đi qua nhánh CAS-fail.")
-    doc.paragraph("FIFO là thứ tự enqueue vào tail, không phải timestamp bên ngoài trước acquire. Spinlock vẫn là blocking synchronization: thread giữ lock ngừng chạy có thể ngăn người khác tiến triển. Không suy luận starvation freedom từ một lần stress test thành công.")
+    doc.page(); doc.heading("1. Memory model and mutex locks")
+    doc.paragraph("Cache coherence alone does not establish visibility across multiple variables. A C++ data race on ordinary shared data causes undefined behavior. A lock must establish both mutual exclusion and publication of the previous owner's payload. Unlock uses release semantics; the successful acquiring operation receives the corresponding publication. Relaxed polling is only a waiting optimization [2].")
+    doc.table(["Lock", "Mechanism and ordering"], [
+        ["TAS", "Repeated atomic_flag test_and_set(acquire); clear(release). Repeated central RMW traffic; no FIFO guarantee."],
+        ["TTAS", "Poll with relaxed loads while busy, then exchange(acquire); store(release) on unlock. Reduces RMW traffic during waiting, with contention still possible at release."],
+        ["MCS", "Stable per-worker queue nodes, atomic tail and local waiting flag. FIFO follows tail-exchange order. A preempted owner can block the queue."],
+        ["std::mutex", "Standard-library baseline using the same workload and timing harness. Its internal implementation need not be a spinlock."]
+    ], [4.8 * cm, 12.6 * cm])
+    doc.paragraph("MCS initializes its node before tail.exchange(acq_rel). An enqueued worker publishes itself through predecessor.next with a release store and waits using acquire loads. Its predecessor releases the payload by storing waiting=false with release semantics. Node/context lifetime extends through unlock; a context is not copied or moved while in use.")
+    doc.paragraph("There are two publication paths. With a successor, the waiting flag performs the handoff. With an apparently empty queue, the owner uses strong CAS to reset tail from its own node to null with release semantics. The next acquiring tail exchange receives that publication.")
+    doc.paragraph("If CAS fails, a successor may have exchanged tail without linking next yet. The owner must wait for that link and then hand off. Weak CAS could fail spuriously when no successor exists and cause an indefinite wait here. A separate expected pointer prevents CAS from overwriting the identity of the node being unlocked. A directed test holds the successor exactly in this enqueue gap.")
+    doc.paragraph("Spinlocks are blocking synchronization: progress can depend on a particular owner running. FIFO enqueue order is not invocation timestamp order, and a passing stress run does not prove starvation freedom.")
 
-    doc.page(); doc.heading("2. Barrier và concurrent counters")
-    doc.heading("Sense-Reversing Barrier", 2)
-    doc.paragraph("Barrier có participant count cố định dương, remaining khởi tạo P và global sense=false. Mỗi worker giữ local sense=false riêng cho từng barrier instance. Mỗi lượt đảo local sense, fetch_sub(1, acq_rel). Thread nhận old remaining=1 là người cuối: reset remaining=P bằng relaxed-store, sau đó release-store global sense. Người khác acquire-load sense cho đến khi khớp local sense.")
-    doc.paragraph("Các RMW acq_rel trên remaining nối các arrivals theo modification order, tích lũy writes của threads đã đến. Thread cuối đã acquire mọi writes trước đó rồi publish qua sense; người chờ acquire publication đó. Thread cuối không cần chờ sense vì nó đã nhận chuỗi arrivals. Reset counter được sequenced-before release sense, nên lần đến kế tiếp không mất updates. Chưa thể toggle sense lần thứ hai cho tới khi mọi participant của vòng trước đã đi vào vòng tiếp theo; một thread chưa quan sát xong vòng cũ do đó không bị bỏ qua generation.")
-    doc.paragraph("Một thread_local bool dùng chung cho mọi barrier là sai thiết kế vì phase counts giữa hai instance có thể khác nhau. API dùng context tường minh. Test viết slot, barrier, đọc tất cả slot rồi barrier lần hai trước vòng mới; barrier thứ hai ngăn chính test tự gây data race. Standard baseline dùng std::barrier::arrive_and_wait [3].")
-    doc.heading("Counter contract và linearization", 2)
-    doc.table(["Biến thể", "State / điểm có hiệu lực", "Lý do memory order"], [
-        ["Mutex TAS/TTAS/MCS/std", "uint64_t dưới lock; lệnh tăng trong CS", "Acquire/release trao quyền; value(context) cũng giữ lock nếu có readers đồng thời."],
-        ["CAS", "CAS thành công thay x bằng x+1", "Expected cập nhật khi fail; desired tính lại. Relaxed hợp lệ vì chỉ đếm số, không publish payload khác."],
-        ["FAA", "fetch_add(1) trả giá trị cũ", "Một atomic RMW relaxed; không biến load + store thành phép tăng giả nguyên tử."],
-        ["CAS-backoff", "Cùng CAS, thêm pause sau fail", "Policy deterministic 1..1024 pause steps, reset sau operation; không nhầm đơn vị nanosecond."]
-    ], [3.6 * cm, 6.2 * cm, 7.6 * cm])
-    doc.paragraph("Increment trả old value, counter khởi tạo 0; tổng operations được validation để không wrap uint64_t. CAS/FAA không dùng để cấp phép truy cập dữ liệu thường khác. Lock-free phụ thuộc atomic thực tế; CAS retry loop không đảm bảo mỗi thread wait-free. Tập returned values [0,K) và final K là oracle thực nghiệm, còn linearization point là lập luận cho mọi execution hợp lệ.")
+    doc.page(); doc.heading("2. Sense reversal and concurrent counters")
+    doc.paragraph("The barrier has a fixed positive participant count P, remaining=P and global sense=false. Each worker has a separate local sense for each barrier instance. An arrival flips local sense and performs remaining.fetch_sub(1, acq_rel). The last arrival resets remaining=P with a relaxed store, then publishes global sense with release. Other participants wait with acquire loads.")
+    doc.paragraph("The acq_rel RMW chain accumulates the writes preceding each arrival. The last thread receives this chain and publishes it through sense; waiting threads acquire that publication. Reset is sequenced before the release of sense. A second generation cannot finish until every participant has entered it, preventing a delayed participant from missing its previous generation.")
+    doc.paragraph("One thread_local boolean shared by all barrier instances would be incorrect when instance phase counts differ. Explicit per-worker/per-instance contexts avoid this. Visibility tests use a second barrier before the next round of writes so that the test itself has no data race. The baseline calls std::barrier::arrive_and_wait [3].")
+    doc.table(["Counter", "Linearization and ordering"], [
+        ["Mutex TAS/TTAS/MCS/std", "An ordinary uint64_t increment while holding the lock. Concurrent value() calls acquire the same lock."],
+        ["CAS", "A successful CAS changing x to x+1. Weak-CAS retries recompute desired from the updated expected value."],
+        ["FAA", "fetch_add(1) is one atomic RMW and returns the previous value. Separate load/store would lose updates."],
+        ["CAS-backoff", "The same CAS algorithm with deterministic 1..1024 pause steps after failure, reset after each operation."]
+    ], [4.8 * cm, 12.6 * cm])
+    doc.paragraph("CAS/FAA use relaxed ordering because the counter represents only a number; it does not publish other payload. Increment returns the old value. Validated total work prevents uint64_t wrap. Actual atomic lock-freedom is platform dependent; CAS retry is not a per-thread wait-free guarantee. Returned values [0,K) and final K are empirical oracles; linearization points supply the general operation argument.")
 
-    doc.page(); doc.heading("3. Kiểm tra và đối chiếu kiến thức")
-    doc.paragraph("Suite CTest gồm workload, locks, barriers, counters, CLI validation và analysis validation. Assertions kiểm tra vẫn hoạt động trong Release vì dùng runtime checks, không dựa vào assert bị NDEBUG tắt. Test process có timeout; không coi timeout là bằng chứng tính đúng.")
-    doc.table(["Nhóm", "Oracle / tình huống chủ động"], [
-        ["Workload", "Naive prime đối chiếu oracle sqrt độc lập với N=0..10009; quotient/remainder giữ đủ K, kể cả K<P; overflow input."],
-        ["Locks", "Occupancy atomic không overlap; plain protected count; payload invariant ở một lượt riêng không thêm telemetry RMW che lỗi ordering; RAII và 2 instances."],
-        ["MCS", "Gap sau tail exchange trước nối next; owner phải chờ link; FIFO enqueue có điều khiển; queue-rỗng và tái dùng node."],
-        ["Barrier", "1/2/3/4/5/8 participants, 5 seeds; nhiều phase; A-A-B giữa 2 instances; visibility; giữ last participant sau arrival thật; reject P=0."],
-        ["Counters", "Không lost update; returned values không trùng/thiếu; concurrent value >= increment trước đó của cùng thread; post-join precedence; boundary và instances."],
-        ["Executable / analysis", "Đối chiếu checksum cho prime/composite; K không chia hết và K<P; input invalid; known-answer episode/s, IQR, speedup và phát hiện raw data hỏng."],
-        ["SC / stress", "TAS/TTAS/MCS/barrier có SC reference; CAS/FAA có SC reference. Stress tăng 10 lần work; bounded oversubscription tách khỏi kết luận progress tổng quát."]
-    ], [3.0 * cm, 14.4 * cm])
-    doc.table(["Kiểm tra thực tế", "Kết quả"], [[c["mode"], c["status"] + (": " + c["reason"] if "reason" in c else "") + (". " + c["limitations"] if "limitations" in c else "")] for c in checks["checks"]], [4.3 * cm, 13.1 * cm])
-    doc.paragraph("Finite tests, TSan hay ASan đều không phải chứng minh đầy đủ mọi interleaving. Báo cáo giữ riêng kết quả công cụ và lập luận happens-before. Nếu một sanitizer không khởi tạo được trong môi trường, trạng thái unavailable được ghi đúng; không suy ra race-free từ lần không chạy được đó.")
+    doc.page(); doc.heading("3. Correctness and course alignment")
+    doc.table(["Test group", "Oracle and directed cases"], [
+        ["Workload", "Naive prime against an independent square-root oracle for N=0..10009; quotient/remainder work distribution including K<P; input overflow."],
+        ["Locks", "Non-overlapping occupancy; protected counts; a separate plain-payload visibility test without telemetry RMW that could hide ordering errors; RAII and multiple instances."],
+        ["MCS", "Controlled enqueue gap and FIFO order, empty-queue handoff and node reuse."],
+        ["Barrier", "P=1/2/3/4/5/8, five seeds, many phases, A-A-B across instances, visibility and a delayed final participant; reject P=0."],
+        ["Counters", "No lost updates, exact old-value range, concurrent reads respecting each thread's completed increments, post-join precedence and no-wrap boundaries."],
+        ["CLI / analysis", "Prime/composite checksums, non-divisible work, invalid inputs; known-answer throughput, IQR/speedup and corrupted-row rejection."]
+    ], [4.8 * cm, 12.6 * cm])
+    describe = lambda c: c["status"] + (f" ({c['build_type']}, sanitizer={c['sanitizer']})" if "build_type" in c else "") \
+        + (": " + c["reason"] if "reason" in c else "") + (". " + c["limitations"] if "limitations" in c else "")
+    doc.table(["Check run for this report", "Result"], [[c["mode"], describe(c)] for c in checks["checks"]], [4.8 * cm, 12.6 * cm])
+    doc.paragraph("All six CTest groups use runtime checks that stay active in Release. SC reference implementations supplement the acquire/release variants; stress increases work tenfold and includes bounded oversubscription. Test timeouts detect a failed run, not correctness. Finite tests and sanitizers do not prove every interleaving.")
+    if args.checks_note: doc.paragraph(args.checks_note)
+    doc.paragraph("The algorithms follow course material: TAS/TTAS/MCS in Ch03 pp.17-28, sense reversal in Ch04 pp.8-15, CAS/FAA in Ch02a pp.16-21, and C++ ordering in Ch02b. Spinlock progress and counter specifications follow Ch03/Ch05.")
 
-    doc.page(); doc.heading("4. Môi trường và protocol đo")
+    doc.page(); doc.heading("4. Platform and measurement protocol")
     cache = env["build_cache"]
-    doc.table(["Thuộc tính", "Giá trị thực tế"], [
-        ["Platform ID / OS", env["platform_id"] + " / " + env["os"]],
-        ["CPU model", env["cpu_model"]],
-        ["Logical CPU / affinity / topology", f"OS={env['os_logical_cpus']}, affinity={env['affinity_logical_cpus']}, cores theo topology={env['physical_cores_in_affinity']} (môi trường ảo hóa)"],
-        ["CPU quota / memory limit", str(env["cpu_quota"]) + " / " + str(env["memory_limit_bytes"])],
-        ["Compiler", (env["compiler_version"] or "unknown").splitlines()[0]],
-        ["Release flags", cache.get("CMAKE_CXX_FLAGS_RELEASE", "unknown") + " | no LTO, no sanitizer"],
-        ["Atomic uint64/bool/pointer lock-free", "/".join(str(env["capabilities"][k]) for k in ["atomic_uint64_lock_free", "atomic_bool_lock_free", "atomic_pointer_lock_free"])],
-        ["Wait hint / alignment", env["capabilities"]["spin_hint"] + " / 64 bytes (lựa chọn layout)"],
-        ["Affinity / power", env["affinity_policy"] + "; " + env["power_mode"]]
-    ], [5.1 * cm, 12.3 * cm])
-    doc.paragraph("Naive is_prime thử mọi divisor từ 2 đến N-1 và dừng sớm nếu tìm thấy ước. N đọc từ CLI; implementation nằm ở translation unit riêng và benchmark tắt IPO/LTO. Checksum cục bộ được dùng sau join; compiler không biết hàm pure qua declaration. Đã kiểm tra optimized disassembly để xác nhận external primality calls còn trong vòng lặp, ở trong/ngoài CS tương ứng. Không dùng volatile làm primitive đồng bộ.")
-    doc.paragraph("Program time bắt đầu ngay trước spawn và kết thúc sau join, gồm gate/khởi tạo thread theo metric đề. Work/context allocations ở trước timer. Worker interval = max(end)-min(start), bắt đầu sau standard latch gate độc lập. Barrier loop chỉ gọi arrive_and_wait E lần; episode/s = E / worker_seconds, không nhân thêm P.")
-    doc.paragraph(f"Matrix gồm {measured['configurations']} cấu hình, {manifest['matrix']['warmup_repetitions']} warmup và {manifest['matrix']['measured_repetitions']} measured repetitions mỗi cấu hình; {measured['raw_samples']} raw rows, {measured['failed_samples']} lỗi. Thứ tự cấu hình xáo theo seed cố định {manifest['matrix']['order_seed']}, chạy tuần tự. Median và IQR là thống kê mô tả, không phải confidence interval. Raw rows và manifest giữ nguyên để tái lập.")
-    doc.paragraph("Core N=997, W=0/1/2/4/8, P=1/2/3/4/8; fixed-total K=20000 và per-thread I=5000. Sensitivity N=97/K=200000, N=10007/K=2000, W=0/4; K được giữ cố định trong từng panel. Barrier E=20000; counters K=1000000. Các workload ngắn phục vụ reference sweep rộng; startup/scheduling và host contention vẫn ảnh hưởng, đặc biệt ở serial/counter nhanh. Không gọi per-thread timing ratio là strong-scaling speedup.")
+    doc.table(["Property", "Recorded value"], [
+        ["Platform / OS", env["platform_id"] + " / " + env["os"]],
+        ["CPU", platform],
+        ["Toolchain", (env["compiler_version"] or "unknown").splitlines()[0] + "; Release " + cache.get("CMAKE_CXX_FLAGS_RELEASE", "flags unknown") + "; no LTO or sanitizer."],
+        ["Atomics / waiting", "uint64/bool/pointer lock-free: " + "/".join(str(env["capabilities"][k]) for k in ["atomic_uint64_lock_free", "atomic_bool_lock_free", "atomic_pointer_lock_free"]) + "; spin hint " + env["capabilities"]["spin_hint"] + "; 64-byte layout alignment."],
+        ["Control", env["affinity_policy"] + "; " + env["power_mode"]]
+    ], [4.8 * cm, 12.6 * cm])
+    doc.paragraph("Naive is_prime tries divisors 2..N-1 and returns early on a divisor. Each lock iteration acquires, calls it once, releases, then performs W outside calls. The function is in a separate translation unit with IPO/LTO disabled, and local checksums are consumed after join, so the compiler cannot remove the work. volatile is not used as synchronization.")
+    doc.paragraph("Program time starts immediately before thread spawn and ends after join, including the independent latch start gate. Context/work allocations precede this timer. Worker interval is max(end)-min(start) after the gate. The barrier executes E episodes with no useful work between; throughput is E/worker_seconds, not P*E/seconds.")
+    warmups = measured["failed_warmups"]
+    failures = f"{measured['failed_measured_samples']} failed measured samples"
+    if warmups:
+        failures += f" and {len(warmups)} failed warmup(s), excluded from statistics by design: " + "; ".join(
+            f"{w['implementation']} P={w['threads']} {w['mode']} W={w['outside_work']} ({w['status']}: {w['error']})" for w in warmups)
+    doc.paragraph(f"The matrix has {measured['configurations']} configurations, {matrix['warmup_repetitions']} warmups and {matrix['measured_repetitions']} measured repetitions each: {measured['raw_samples']} raw samples, {failures}. Each sample is a separate process with a {matrix['timeout_seconds']} s timeout; configuration order uses fixed shuffle seed {matrix['order_seed']}. Median and inclusive IQR are descriptive statistics, not confidence intervals.")
+    above = [t for t in threads if t > cores]
+    sweep = f"Threads P={'/'.join(map(str, threads))} on {cores} physical cores and {logical} logical CPUs"
+    sweep += f"; P={'/'.join(map(str, above))} use Hyper-Threading siblings." if above else "."
+    if saturation: sweep += " P values that fill every logical CPU are measured in a separate saturation run (sections 5 and 7)."
+    doc.paragraph(f"{sweep} Core locks use N=997, W={'/'.join(map(str, core['outside_work']))}; fixed-total K={core['total_operations'][0]} or per-thread I={experiments['core-per_thread']['iterations_per_thread'][0]}. Sensitivity uses N=97/K={experiments['sensitivity-97']['total_operations'][0]} and N=10007/K={experiments['sensitivity-10007']['total_operations'][0]} with W=0/4. Barriers use E={experiments['barriers']['episodes'][0]}; counters K={experiments['counters']['total_operations'][0]}. Short runs remain sensitive to startup and scheduling. Per-thread ratios are not strong-scaling speedups.")
 
-    doc.page(); doc.heading("5. Kết quả mutex locks")
-    doc.image(args.figures / "locks_fixed_total.png", "Hình 1. N=997, fixed-total K=20000; median và IQR; cùng K,N,W trong mỗi comparison.")
+    doc.page(); doc.heading("5. Mutex lock results")
+    doc.image(args.figures / "locks_fixed_total.png", f"Figure 1. Fixed total K={core['total_operations'][0]}, N=997; median and IQR. Each comparison holds K, N and W constant.")
     selected = find(suite="locks", mode="fixed_total", prime_n=997, outside_work=0, threads=peak)
-    doc.table([f"P={peak}, W=0", "Median (ms)", "IQR (ms)", "Speedup S(P)"], [[r["implementation"], fmt(r["median_program_ms"]), f"{fmt(r['q1_program_ms'])} - {fmt(r['q3_program_ms'])}", fmt(r["speedup"])] for r in selected], [4.1 * cm, 3.8 * cm, 6.1 * cm, 3.4 * cm])
-    winner = min(selected, key=lambda r: float(r["median_program_ms"]))
-    doc.paragraph(f"Ở cấu hình được trích bảng, {winner['implementation']} có median thấp nhất: {fmt(winner['median_program_ms'])} ms. Đây là kết quả của đúng workload/platform này, không là thứ hạng phổ quát. Tăng threads không đảm bảo giảm thời gian vì useful work trong CS vẫn tuần tự và contenders phải trao quyền sở hữu cache line/queue.")
-    doc.paragraph("S(P)=T(1)/T(P) được tính với cùng implementation và cùng K,N,W, dùng program time. Các giá trị trong bảng là thống kê median mô tả; chênh lệch nhỏ vài phần trăm không tự chứng minh ưu thế có ý nghĩa thống kê. Không áp công thức strong scaling cho đồ thị per-thread có tổng việc thay đổi.")
-    doc.paragraph("TAS tạo RMW liên tục trên cờ chung; TTAS đọc khi bận; MCS đổi chi phí tranh chấp cờ chung thành node và handoff theo queue. Đây là giải thích cấu trúc dựa trên thuật toán, chưa phải phép đo hardware cache misses. Khi CS dài hoặc owner bị preempt, spin/queue và standard mutex có trade-off khác nhau. Chỉ elapsed time không đủ khẳng định nguyên nhân cache/NUMA chính xác.")
+    doc.table([f"P={peak}, W=0", "Median ms", "IQR ms", "S(P)"], [[r["implementation"], fmt(r["median_program_ms"]), f"{fmt(r['q1_program_ms'])}-{fmt(r['q3_program_ms'])}", fmt(r["speedup"])] for r in selected], [4.8 * cm, 3.6 * cm, 5.4 * cm, 3.6 * cm])
+    winner = min(selected, key=median)
+    doc.paragraph(f"{winner['implementation']} has the lowest median in this configuration ({fmt(winner['median_program_ms'])} ms). This is a workload/platform-specific observation, not a universal ranking. S(P)=T(1)/T(P) uses program time and the same implementation, K, N and W. Small percentage differences alone do not establish statistical significance.")
+    best = []
+    for w in core["outside_work"]:
+        group = find(suite="locks", mode="fixed_total", prime_n=997, outside_work=w, threads=peak)
+        fastest = min(group, key=median)
+        speedups = {r["implementation"]: float(r["speedup"]) for r in group}
+        best.append([str(w), f"1/{w + 1}", fastest["implementation"], fmt(median(fastest)), max(speedups, key=speedups.get), fmt(max(speedups.values()))])
+    doc.table(["W", "Calls in CS", f"Fastest at P={peak}", "Median ms", f"Best S({peak})", "S(P)"], best, [1.6 * cm, 2.6 * cm, 3.6 * cm, 2.8 * cm, 3.6 * cm, 3.2 * cm])
+    for text in args.lock_notes: doc.paragraph(text)
+    saturation_table("locks", "program_ms", "Saturation, ms median [IQR]")
+    doc.paragraph("Useful work inside the critical section remains serial. TAS repeatedly updates a shared flag; TTAS reads while busy; MCS replaces central flag contention with queued nodes and handoffs. These are algorithmic explanations, not measured cache-miss attribution.")
 
-    doc.page(); doc.heading("6. Workload ngoài CS và sensitivity")
-    doc.image(args.figures / "locks_per_thread.png", "Hình 2. Per-thread I=5000: P tăng cũng làm tổng CS=P×I tăng; không dùng đồ thị này để suy ra strong scaling.")
-    doc.paragraph("OUTSIDE_WORK=k nghĩa là 1/(k+1) số prime calls ở trong CS. Đó không phải tỷ lệ thời gian vì còn lock/spin và chi phí scheduler. Work ngoài CS tăng có thể giảm contention, nhưng cũng tăng tổng lượng tính toán. Các raw samples luôn kiểm checksum bằng tổng calls dự kiến.")
-    doc.image(args.figures / "locks_sensitivity.png", "Hình 3. Sensitivity N ngắn/dài; K khác giữa hai panel để giữ thời lượng hợp lý. Chỉ so algorithms/P trong cùng panel.")
-    doc.paragraph("Backoff dùng 1..1024 pause steps sau thất bại, không phải sleep_for nanoseconds. So sánh TTAS-backoff với TTAS trong cùng panel giúp thấy chi phí retry giảm hay tăng ở workload thực; không mặc định exponential backoff luôn cải thiện performance.")
+    doc.page(); doc.heading("6. Outside work and critical-section sensitivity")
+    doc.image(args.figures / "locks_per_thread.png", f"Figure 2. Per-thread I={experiments['core-per_thread']['iterations_per_thread'][0]}. Total critical-section operations grow as P*I; these curves must not be interpreted as strong scaling.")
+    doc.paragraph("OUTSIDE_WORK=k puts 1/(k+1) of prime calls inside the critical section. This is a fraction of calls, not elapsed time, because lock/spin/scheduler overhead also contributes. More outside work can reduce contention while increasing total computation. Every sample checks the expected total call checksum.")
+    doc.image(args.figures / "locks_sensitivity.png", "Figure 3. Short/long N sensitivity; K differs between panels to keep durations practical. Compare implementations and P only within a panel.")
+    for text in args.sensitivity_notes: doc.paragraph(text)
+    doc.paragraph("Backoff uses 1..1024 pause instructions, not the nanosecond sleeps of the statement's example: a sleep hands the core to the OS scheduler and its minimum granularity is far longer than a short critical section. Backoff can help or hurt depending on retry and waiting costs.")
 
     doc.page(); doc.heading("7. Barrier throughput")
-    doc.image(args.figures / "barriers.png", "Hình 4. Throughput là global episodes/s; không useful work giữa các lần barrier, không nhân với số participants.")
+    doc.image(args.figures / "barriers.png", "Figure 4. Global episodes per second, median and IQR, without useful work between barriers.")
     selected = find(suite="barriers", threads=peak)
-    doc.table([f"P={peak}", "Median global episodes/s", "Median latency/episode (µs)"], [[r["implementation"], fmt(r["median_throughput"]), fmt(float(r["median_worker_ms"]) * 1000 / int(r["episodes"]))] for r in selected], [4.9 * cm, 6.0 * cm, 6.5 * cm])
-    doc.paragraph("Mỗi worker gọi barrier E lần nên chương trình có E episode, nhưng P×E arrival calls. Việc tính P×E/t sẽ cho arrival throughput khác đơn vị và phóng đại episode throughput. Timer chỉ đọc ở hai đầu worker, không trong mỗi phase. Standard barrier có implementation/platform trade-off riêng; custom centralized remaining/sense vẫn có điểm tranh chấp chung.")
-    doc.paragraph("Với nhiều participants, một worker tới chậm làm cả phase chờ. Với hơn tài nguyên CPU khả dụng, busy waiting có thể bị ảnh hưởng mạnh bởi preemption. Bản reference sweep giới hạn tới 8 threads theo quota CPU; bounded oversubscription chỉ là correctness stress, không thay cho nghiên cứu performance trên laptop thật.")
+    doc.table([f"P={peak}", "Median episodes/s", "Latency/episode (us)"], [[r["implementation"], fmt(r["median_throughput"]), fmt(float(r["median_worker_ms"]) * 1000 / int(r["episodes"]))] for r in selected], [4.8 * cm, 6.3 * cm, 6.3 * cm])
+    doc.paragraph("Each of P workers makes E calls, but the program completes E global episodes. P*E/t measures arrival throughput, a different unit. Timers are read at worker boundaries, not every phase. The standard library and centralized custom barrier have different implementation/platform tradeoffs; the custom remaining/sense state is still shared contention.")
+    for text in args.barrier_notes: doc.paragraph(text)
+    saturation_table("barriers", "throughput", "Saturation, thousand episodes/s", 1e3)
 
     doc.page(); doc.heading("8. Concurrent counter performance")
-    doc.image(args.figures / "counters.png", "Hình 5. Cùng tổng K=1000000 increments; program time từ spawn tới join; median và IQR.")
+    doc.image(args.figures / "counters.png", f"Figure 5. Fixed K={experiments['counters']['total_operations'][0]} increments; spawn-to-join program time, median and IQR.")
     selected = find(suite="counters", threads=peak)
-    doc.table([f"P={peak}", "Median program (ms)", "Median increments/s"], [[r["implementation"], fmt(r["median_program_ms"]), fmt(r["median_throughput"])] for r in selected], [5.5 * cm, 5.3 * cm, 6.6 * cm])
-    best = min(selected, key=lambda r: float(r["median_program_ms"]))
-    doc.paragraph(f"Trong bảng này, {best['implementation']} nhanh nhất theo median, {fmt(best['median_program_ms'])} ms. Mọi biến thể đều kiểm final value K và checksum của returned old values. Counter CAS có thể retry khi xung đột; FAA biểu diễn trực tiếp RMW tăng; lock-based counters thêm acquire/release. Tất cả vẫn chia sẻ một giá trị cần cập nhật nên tăng P không đồng nghĩa tăng parallel useful work.")
-    doc.paragraph("CAS-backoff thay đổi thời điểm retry, có thể giảm cạnh tranh nhưng thêm thời gian chờ. Không dùng diagnostic shared retry counter trong performance hot loop để tránh làm sai comparison. Lock-free của atomic được ghi riêng theo môi trường; kết quả nhanh/chậm không chứng minh wait-free hay starvation-free.")
+    doc.table([f"P={peak}", "Median ms", "Median increments/s"], [[r["implementation"], fmt(r["median_program_ms"]), fmt(r["median_throughput"])] for r in selected], [4.8 * cm, 5.0 * cm, 7.6 * cm])
+    fastest = min(selected, key=median)
+    doc.paragraph(f"{fastest['implementation']} has the lowest median in this table. All variants validate final K and the old-value checksum. CAS may retry; FAA directly expresses the increment RMW; mutex counters add lock/unlock. All still update one shared numeric location, so more workers do not create independent useful counter work.")
+    for text in args.counter_notes: doc.paragraph(text)
+    doc.paragraph("No diagnostic shared retry counter is added to the timed hot loop. Fast execution does not prove wait-freedom, fairness or starvation freedom.")
 
-    doc.page(); doc.heading("9. Tái lập, giới hạn và kết luận")
-    doc.paragraph("Chạy từ root repo sau khi có compiler C++20 và CMake >=3.20. C++ code không cần thư viện ngoài; Python >=3.10 dùng cho runner và analysis. Cài requirements để vẽ hình/xuất PDF. Run directory phải mới; runner từ chối ghi đè dữ liệu cũ.")
-    doc.code("cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release\ncmake --build build/release -j 4\nctest --test-dir build/release --output-on-failure\npython3 -m pip install -r assignments/assignment1/scripts/requirements.txt")
-    doc.code("python3 assignments/assignment1/scripts/run_benchmarks.py \\\n  --bin-dir build/release/assignments/assignment1 \\\n  --matrix assignments/assignment1/config/benchmark_matrix.json \\\n  --platform-id my-computer --output results-local/run-01")
-    doc.paragraph("Sau đó dùng summarize.py, plot_results.py, create_report.py với các đường dẫn run/summary/figures/checks thực tế. Hướng dẫn chính xác nằm trong README. Chạy lại verify.py và giữ checks.json cùng source fingerprint trước khi tạo report. ZIP được tạo bằng package_submission.py, chứa report, source, tests, config, scripts và dữ liệu; giải nén ở thư mục mới rồi build/test lại.")
-    doc.paragraph("Giới hạn: một môi trường managed/ảo hóa, host power và tải ngoài không kiểm soát; chưa đo laptop hay ARM của người nộp; workload serial ngắn chịu ảnh hưởng startup; không có hardware counters hoặc proof bằng model checker. Số liệu không được ngoại suy thành kết quả của máy khác. TSan unavailable nếu được ghi ở bảng kiểm thử là hạn chế công cụ thực tế, không là chứng nhận không có race.")
-    doc.paragraph("Bản triển khai dùng đúng atomic/HB để trao payload qua locks và barrier; tests định hướng các lỗi đặc trưng, SC reference và stress bổ sung bằng chứng. Hiệu năng được đối chiếu trên cùng workload/metric thay vì giả định custom luôn hơn standard. Phần người nộp còn cần xác nhận trước nộp lớp là thông tin định danh theo quy định, phiên bản đề/giờ LMS và thí nghiệm trên những máy cá nhân thực có.")
-    doc.heading("Nguồn tham khảo", 2)
+    doc.page(); doc.heading("9. Reproduction, limitations and references")
+    doc.paragraph("Run from the repository root with CMake >=3.20, a C++20 compiler whose standard library has std::barrier, and Python >=3.10 with the packages in assignments/assignment1/scripts/requirements.txt. Use a fresh output directory; the runner rejects overwriting previous data.")
+    doc.code("cmake -S . -B build/release -G Ninja -DCMAKE_BUILD_TYPE=Release\ncmake --build build/release -j 8\nctest --test-dir build/release --output-on-failure\npython assignments/assignment1/scripts/run_benchmarks.py \\\n  --bin-dir build/release/assignments/assignment1 \\\n  --matrix assignments/assignment1/config/benchmark_matrix.json \\\n  --platform-id my-computer --output results-local/run-01")
+    doc.paragraph("Then run summarize.py, plot_results.py and create_report.py with the run, summary, figure and checks paths; package_submission.py builds the ZIP. Extract the ZIP into a fresh directory and build/test again.")
+    doc.paragraph(args.limitations)
+    doc.heading("References", 2)
     for text in [
-        "[1] Assignment1_v1_16092026.pdf, 16/09/2026, trang 1-4; hạn trong bản đề: 29/10/2026. Bản gốc trong archive đã cung cấp, checksum ở references/source-manifest.json.",
-        "[2] Slides Ch00-Ch07 (gồm Ch02a/Ch02b), 234 trang; Ch03 trang 17-28 cho locks/MCS; Ch04 trang 8-15 cho barrier; Ch02a/Ch02b cho atomics/HB. Trang PDF tính từ 1.",
-        "[3] C++20 working draft N4861: atomics.order; atomics.types.operations; thread.barrier.class. https://timsong-cpp.github.io/cppwp/n4861/ (đối chiếu 16/10/2026).",
-        "[4] Mellor-Crummey & Scott, Algorithms for Scalable Synchronization on Shared-Memory Multiprocessors, ACM TOCS 1991; pseudocode: https://www.cs.rochester.edu/research/synchronization/pseudocode/ss.html"
-    ]: doc.paragraph(text)
+        "[1] Assignment1_v1_16092026.pdf, pp.1-4, supplied course material.",
+        "[2] Course slides Ch00-Ch07 (including Ch02a/Ch02b); Ch03 pp.17-28, Ch04 pp.8-15. Page numbers are one-based PDF pages.",
+        "[3] C++20 draft N4861: atomics.order, atomics.types.operations, thread.barrier.class. https://timsong-cpp.github.io/cppwp/n4861/",
+        "[4] Mellor-Crummey and Scott, Algorithms for Scalable Synchronization on Shared-Memory Multiprocessors, ACM TOCS (1991). https://www.cs.rochester.edu/research/synchronization/pseudocode/ss.html"
+    ]: doc.paragraph(text, small=True)
     doc.save()
-    print(json.dumps({"report_pdf": str((args.output / 'report.pdf').resolve()), "report_md": str((args.output / 'report.md').resolve())}))
+    print(json.dumps({"report_pdf": str((args.output / PDF_NAME).resolve()), "report_md": str((args.output / "report.md").resolve())}))
 
 
 if __name__ == "__main__":
@@ -243,4 +279,11 @@ if __name__ == "__main__":
     parser.add_argument("--checks", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--font-dir", type=Path)
-    generate(parser.parse_args())
+    parser.add_argument("--saturation", type=Path, help="summary.csv of the separate saturation run")
+    parser.add_argument("--notes", type=Path, help="JSON with platform_note, checks_note, limitations and lists lock_notes, sensitivity_notes, barrier_notes, counter_notes")
+    args = parser.parse_args()
+    notes = json.loads(args.notes.read_text(encoding="utf-8")) if args.notes else {}
+    args.platform_note, args.checks_note = notes.get("platform_note"), notes.get("checks_note")
+    args.limitations = notes.get("limitations", "Limitations: one platform, uncontrolled background load, short-run startup effects, no hardware counters or exhaustive model checking.")
+    for key in ["lock_notes", "sensitivity_notes", "barrier_notes", "counter_notes"]: setattr(args, key, notes.get(key, []))
+    generate(args)

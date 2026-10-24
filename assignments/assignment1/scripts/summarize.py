@@ -90,6 +90,10 @@ def summarize(run_dir, output):
         writer.writeheader(); writer.writerows(summary)
     result = {"run_id": manifest["run_id"], "raw_samples": len(rows), "configurations": len(expected),
               "summary_groups": len(summary), "failed_samples": len(failed),
+              "failed_measured_samples": sum(1 for row in failed if int(row["repetition"]) >= 0),
+              "failed_warmups": [{k: row[k] for k in ["config_id", "repetition", "implementation", "threads", "mode",
+                                                       "outside_work", "status", "error"]}
+                                 for row in failed if int(row["repetition"]) < 0],
               "all_groups_complete": all(row["complete"] for row in summary),
               "source_sha256": manifest["source_sha256"]}
     (output / "validation.json").write_text(json.dumps(result, indent=2) + "\n")
@@ -106,4 +110,5 @@ if __name__ == "__main__":
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     result = summarize(args.run_dir, args.output)
-    if result["failed_samples"] or not result["all_groups_complete"]: raise SystemExit(1)
+    # A failed warmup is reported, but only measured samples decide whether the statistics are usable.
+    if result["failed_measured_samples"] or not result["all_groups_complete"]: raise SystemExit(1)

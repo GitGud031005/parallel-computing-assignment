@@ -23,7 +23,8 @@ def verify(args):
         commands = [
             [str(args.cmake), "-S", str(ROOT), "-B", str(build), f"-DCMAKE_BUILD_TYPE={build_type}", f"-DPC_SANITIZER={sanitizer}"],
             [str(args.cmake), "--build", str(build), "-j", str(args.jobs)],
-            [str(args.ctest), "--test-dir", str(build), "--output-on-failure", "-j", "1"],
+            # Scope to this assignment's tests; the root build also registers Assignment 2 tests.
+            [str(args.ctest), "--test-dir", str(build / "assignments" / "assignment1"), "--output-on-failure", "-j", "1"],
         ]
         for stage, command in zip(["configure", "build", "ctest"], commands):
             try:

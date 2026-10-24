@@ -1,0 +1,60 @@
+{
+  "schema_version": 2,
+  "purpose": "Saturation probe at P=15/16 on the 16-logical-CPU laptop. Timeouts are expected results here and are kept as raw rows; not summarized with the main study.",
+  "order_seed": 20261024,
+  "warmup_repetitions": 1,
+  "measured_repetitions": 5,
+  "timeout_seconds": 120,
+  "experiments": [
+    {
+      "name": "saturation-locks",
+      "suite": "locks",
+      "parameters": {
+        "implementation": [
+          "tas",
+          "ttas",
+          "mcs",
+          "std_mutex",
+          "ttas_backoff"
+        ],
+        "threads": [
+          12,
+          14,
+          15,
+          16
+        ],
+        "mode": [
+          "fixed_total"
+        ],
+        "prime_n": [
+          997
+        ],
+        "outside_work": [
+          0
+        ],
+        "total_operations": [
+          20000
+        ]
+      }
+    },
+    {
+      "name": "saturation-barriers",
+      "suite": "barriers",
+      "parameters": {
+        "implementation": [
+          "sense_reversing",
+          "std_barrier"
+        ],
+        "threads": [
+          12,
+          14,
+          15,
+          16
+        ],
+        "episodes": [
+          20000
+        ]
+      }
+    }
+  ]
+}
