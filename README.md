@@ -26,6 +26,6 @@ Cần CMake >=3.20, compiler/standard library hỗ trợ C++20 `std::barrier`; P
 | [Slide notes](docs/slide-notes.md) | Ghi chú tự viết từ 9 bộ slide |
 | [Source index](references/source-index.md) | Danh mục nguồn đã đọc |
 
-GitHub lưu source, tests, scripts, cấu hình và tài liệu tự viết. **Không upload slide/PDF đề gốc.** Build output, logs, raw data, figures, report sinh ra và ZIP nằm ngoài phần code publish; các đường dẫn này đã được ignore. Ghi chú/manifest nguồn là thông tin tham chiếu, không chứa bản sao tài liệu gốc.
+GitHub lưu source, tests, scripts, cấu hình và tài liệu tự viết. **Không upload slide/PDF đề gốc.** Hai báo cáo tiếng Anh đã được publish: [Assignment 1 PDF](assignments/assignment1/report/Assignment1_Report_EN.pdf) và [Assignment 2 PDF](assignments/assignment2/report/Assignment2_Report_EN.pdf). Build output, logs, raw data, figures rời và ZIP vẫn giữ cục bộ. Ghi chú/manifest nguồn là thông tin tham chiếu, không chứa bản sao tài liệu gốc.
 
 Phần shared-memory bắt buộc đã có implementation và pipeline; MPI-3 RMA tùy chọn chưa triển khai. Reference study chạy trong managed Linux, không phải laptop người nộp. Yêu cầu đo trên máy cá nhân thực có, điền định danh và đối chiếu giờ LMS vẫn cần hoàn tất trước nộp. [Assignment 2](assignments/assignment2/README.md) có A* tuần tự/song song, concurrent sorted lists, heuristic động/uncertain và Pareto objectives trên OSM road graph thật; xem README riêng để build/run/validate.

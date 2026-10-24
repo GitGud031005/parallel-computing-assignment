@@ -1,5 +1,9 @@
-# Report outputs
+# Assignment 2 report
 
-`create_report.py` tạo report.pdf (8 trang trong đợt tham chiếu), report.md và figures/ từ raw data đã validate và checks cùng source fingerprint. Các outputs này giữ cục bộ, không push GitHub. Báo cáo ghi rõ graph/cost model, heuristic policies, correctness argument, tests, quality/time, giới hạn và nguồn.
+[Read the English report](Assignment2_Report_EN.pdf) (8 pages).
 
-README Ass2 có lệnh tạo report và package. Report cùng source/experiments nằm trong ZIP nộp riêng. Cần đối chiếu định danh, giờ LMS và thí nghiệm trên các máy cá nhân thực có trước chốt nộp. Slide/đề/notebook gốc không được đính kèm vào code repo.
+English edition: 24 October 2026. The report preserves the reference experiments recorded on 16 October 2026 and clarifies the course material, implementation choices, correctness evidence and limitations. This publication does not claim a new benchmark run.
+
+The PDF is the authored project report. Original course slides, assignment statements and sample notebooks are excluded. Raw measurements, separate figures, logs and submission ZIPs remain local. The existing report-generation scripts produce local outputs from validated runs; the published English edition is maintained separately.
+
+Before final submission, supply the required student identity, benchmark on the actual owned platforms and verify the LMS closing time. See the [assignment README](../README.md) for reproduction and packaging instructions.

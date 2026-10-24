@@ -2,7 +2,7 @@
 
 C++20 implementation cho [yêu cầu Ass2](docs/requirements.md): A* tuần tự và song song trên road graph thật; heuristic static/dynamic/uncertain; chi phí scalar distance/time hoặc **tập nghiệm Pareto**; concurrent sorted-list sets theo coarse-grained và fine-grained locking. Có correctness tests, oracle Python độc lập, benchmark, plots, report và source ZIP.
 
-Slide, PDF đề và notebook mẫu **không được upload GitHub**. GitHub giữ code và ghi chú tự viết; OSM extracts, dữ liệu đo, logs, PDF/ZIP sinh ra giữ cục bộ. Mốc thực nghiệm tham chiếu và giới hạn ở [verification.md](docs/verification.md).
+Slide, PDF đề và notebook mẫu **không được upload GitHub**. GitHub giữ code và ghi chú tự viết; Báo cáo tiếng Anh: [Assignment 2 PDF](report/Assignment2_Report_EN.pdf) (8 trang). OSM extracts, dữ liệu đo, logs và ZIP giữ cục bộ. Mốc thực nghiệm tham chiếu và giới hạn ở [verification.md](docs/verification.md).
 
 ## Đọc theo kiến thức môn học trước
 

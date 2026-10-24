@@ -2,7 +2,7 @@
 
 Project C++20 cài đặt TAS/TTAS/MCS, Sense-Reversing Barrier và concurrent counters bằng mutex/CAS/FAA. Có baseline `std::mutex`/`std::barrier`, TTAS/CAS exponential backoff, correctness tests và pipeline benchmark/report. MPI-3 RMA là phần tùy chọn, chưa triển khai.
 
-GitHub chứa code và tài liệu tự viết. **Slide và PDF đề gốc không được đưa lên GitHub.** Dữ liệu đo, logs, hình, PDF report và ZIP được sinh cục bộ; xem [results](results/README.md). Kết quả đối chiếu lần cuối ở [verification.md](docs/verification.md).
+GitHub chứa code và tài liệu tự viết. **Slide và PDF đề gốc không được đưa lên GitHub.** Báo cáo tiếng Anh: [Assignment 1 PDF](report/Assignment1_Report_EN.pdf) (10 trang). Dữ liệu đo, logs, hình rời và ZIP giữ cục bộ; xem [results](results/README.md). Kết quả đối chiếu lần cuối ở [verification.md](docs/verification.md).
 
 ## Đọc theo kiến thức môn học
 

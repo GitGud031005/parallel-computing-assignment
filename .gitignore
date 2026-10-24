@@ -18,7 +18,7 @@ __pycache__/
 /references/local/
 *.zip
 
-# Course originals stay local; GitHub contains our code and written notes only.
+# Course originals stay local; only the two authored report PDFs are allowed.
 *.pdf
 *.ppt
 *.pptx
@@ -53,3 +53,7 @@ __pycache__/
 *.osm.bz2
 *.graphml
 /assignments/assignment2/report/figures/
+
+# Authored English reports explicitly approved for publication
+!/assignments/assignment1/report/Assignment1_Report_EN.pdf
+!/assignments/assignment2/report/Assignment2_Report_EN.pdf
