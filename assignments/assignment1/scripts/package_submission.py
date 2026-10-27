@@ -7,14 +7,29 @@ import zipfile
 from collect_environment import ROOT, ASSIGNMENT, kernel_digest
 
 
+LATEX = ASSIGNMENT / "report/latex"
+REPORT = LATEX / "build/main.pdf"
+REPORT_NAME = "Assignment1_Report.pdf"
+
+
+def stale_report_inputs():
+    # The PDF embeds the C++ sources as listings, so editing either without rebuilding it ships a mismatch.
+    inputs = [p for p in LATEX.rglob("*") if p.is_file() and "build" not in p.relative_to(LATEX).parts
+              and p.name != "build-run.txt"]
+    for folder in ["include", "src", "benchmarks"]:
+        inputs.extend(p for p in (ASSIGNMENT / folder).rglob("*") if p.is_file())
+    built = REPORT.stat().st_mtime
+    return [p.relative_to(ROOT).as_posix() for p in inputs if p.stat().st_mtime > built]
+
+
 def package(output):
-    required = [ASSIGNMENT / "report/Assignment1_Report_EN.pdf",
-                ASSIGNMENT / "include/pc/locks/mcs_lock.hpp", ASSIGNMENT / "tests/test_locks.cpp"]
+    required = [REPORT, ASSIGNMENT / "include/pc/locks/mcs_lock.hpp", ASSIGNMENT / "tests/test_locks.cpp"]
     for path in required:
         if not path.is_file(): raise ValueError(f"missing required deliverable: {path.relative_to(ROOT)}")
+    stale = stale_report_inputs()
+    if stale: raise ValueError(f"report PDF is older than its inputs, rebuild it with latexmk: {stale[:5]}")
     # The statement asks for the PDF report and the relevant C++ source; internal notes stay out.
-    allowed = [ROOT / "CMakeLists.txt", ROOT / ".editorconfig", ASSIGNMENT / "README.md",
-               ASSIGNMENT / "CMakeLists.txt", ASSIGNMENT / "report/Assignment1_Report_EN.pdf"]
+    allowed = [ROOT / "CMakeLists.txt", ROOT / ".editorconfig", ASSIGNMENT / "README.md", ASSIGNMENT / "CMakeLists.txt"]
     for folder in ["include", "src", "benchmarks", "tests", "config", "scripts", "results"]:
         allowed.extend(p for p in (ASSIGNMENT / folder).rglob("*") if p.is_file())
     files = []
@@ -23,15 +38,16 @@ def package(output):
         if any(part in ["build", "local", "__pycache__", ".git"] for part in relative.parts): continue
         if path.suffix in [".pyc", ".o", ".exe"] or path.name == ".gitkeep": continue
         files.append(path)
+    entries = [(REPORT, REPORT_NAME)] + [(p, p.relative_to(ROOT).as_posix()) for p in files]
     manifest = {"kernel_source_sha256": kernel_digest(),
-                "files": {p.relative_to(ROOT).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest() for p in files}}
+                "files": {name: hashlib.sha256(path.read_bytes()).hexdigest() for path, name in entries}}
     output.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
-        for path in files: archive.write(path, "Assignment1/" + path.relative_to(ROOT).as_posix())
+        for path, name in entries: archive.write(path, "Assignment1/" + name)
         archive.writestr("Assignment1/submission_manifest.json", json.dumps(manifest, indent=2) + "\n")
     with zipfile.ZipFile(output) as archive:
         if archive.testzip(): raise ValueError("ZIP CRC failed")
-    print(json.dumps({"output": str(output.resolve()), "files": len(files) + 1, "bytes": output.stat().st_size,
+    print(json.dumps({"output": str(output.resolve()), "files": len(entries) + 1, "bytes": output.stat().st_size,
                       "sha256": hashlib.sha256(output.read_bytes()).hexdigest()}))
 
 

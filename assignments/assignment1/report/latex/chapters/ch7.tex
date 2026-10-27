@@ -1,0 +1,24 @@
+\newpage
+\section{Conclusion}\label{sec:conclusion}
+
+\subsection{Summary}
+
+This assignment implemented the TAS, TTAS and MCS spinlocks, a reusable sense-reversing barrier, and concurrent counters based on locks, CAS and FAA in C++20, following the algorithms of the lecture and the acquire/release discipline of the C++ memory model. Correctness was tested by invariant checks under many threads, directed tests for the rare MCS and barrier interleavings, SC reference variants, stress runs and three sanitizers; all checks passed, including ThreadSanitizer with zero race warnings. The performance study on the student's laptop shows that:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item the speedup of the lock workload is bounded by the share of work outside the lock, and the spinlocks come close to that bound at low thread counts;
+  \item TTAS's read-only waiting is what keeps it efficient under frequent handoffs, where TAS degrades;
+  \item MCS is fair and competitive up to about 10 threads but collapses when spinning threads fill every logical CPU, because a preempted successor blocks its queue;
+  \item \texttt{std::mutex} pays a constant handoff cost that makes it slower than a single thread when half of the work is in the lock, but it is robust when threads exceed CPUs;
+  \item the spinning sense-reversing barrier is about two orders of magnitude faster than \texttt{std::barrier} while every participant has a CPU;
+  \item a shared counter does not scale with any synchronization method, and backoff improves its throughput by serializing the work.
+\end{itemize}
+
+\subsection{Limitations}
+
+The study uses one platform, a hybrid laptop CPU without thread pinning, so the scheduler and the two core types contribute to the variation, and background load was reduced but not eliminated. Hardware performance counters were not used, so explanations involving cache traffic, core placement or operating-system wake-ups are hypotheses consistent with the timings. Finite tests and sanitizers do not prove every interleaving. With 15 or 16 threads the spinning results are dominated by scheduling, so they were separated into a saturation study.
+
+\subsection{Future work}\label{sec:future}
+
+The optional distributed part\cite{r1} was not implemented. MPI-3 one-sided communication\cite{r7} offers the primitives needed for it: \texttt{MPI\_Compare\_and\_swap} and \texttt{MPI\_Fetch\_and\_op} correspond to CAS and FAA on a window, and an MCS-style lock can be built from them with each process spinning on a flag in its own window. Further directions on shared memory are pinning threads to performance cores to separate the effect of the hybrid CPU, adding a ticket lock, which is also FIFO and should therefore show the same sensitivity to preemption, as a test of the explanation in Section~
+ef{sec:res-saturation}, and a combining-tree or dissemination barrier to remove the shared counter.

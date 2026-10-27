@@ -1,0 +1,15 @@
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\caption{Speedup $S(P)=T(1)/T(P)$, fixed total, $N=997$, $W=1$ (Amdahl bound 2$\times$). Bold: highest at each $P$.}\label{tab:speedup-w1}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr 0.200\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.099\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.099\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.099\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.099\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.099\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.099\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.099\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.099\textwidth-2\tabcolsep-\arrayrulewidth\relax}|}
+\hline
+\textbf{Lock} & \textbf{P=2} & \textbf{P=3} & \textbf{P=4} & \textbf{P=6} & \textbf{P=8} & \textbf{P=10} & \textbf{P=12} & \textbf{P=14} \\ \hline
+\texttt{tas} & 1.88 & 1.69 & \textbf{1.71} & \textbf{1.60} & 1.30 & 1.11 & 1.12 & 1.03 \\ \hline
+\texttt{ttas} & 1.88 & 1.78 & 1.64 & 1.44 & 1.42 & \textbf{1.32} & 1.19 & 1.24 \\ \hline
+\texttt{ttas\_backoff} & \textbf{1.91} & 1.69 & 1.58 & 1.52 & 1.47 & 1.29 & 1.21 & \textbf{1.34} \\ \hline
+\texttt{mcs} & 1.79 & \textbf{1.84} & 1.68 & 1.54 & \textbf{1.60} & 1.18 & \textbf{1.27} & 0.83 \\ \hline
+\texttt{std\_mutex} & 0.85 & 0.82 & 0.83 & 0.82 & 0.82 & 0.82 & 0.82 & 0.83 \\ \hline
+\end{tabular}
+\end{table}

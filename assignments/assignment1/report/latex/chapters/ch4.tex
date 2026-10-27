@@ -1,0 +1,68 @@
+\newpage
+\section{Correctness Testing}\label{sec:testing}
+
+The statement asks for an approach to testing the correctness of each part\cite{r1}. A concurrency bug typically needs a rare interleaving, so a test that merely passes once proves little. The approach here combines four techniques: tests that check an invariant on every operation while many threads run, directed tests that force a specific rare interleaving, reference variants and stress runs that vary the conditions, and sanitizers that detect undefined behavior and data races independently of the invariants.
+
+\subsection{Properties and the tests that check them}
+
+Table~\ref{tab:test-props} lists, for each part, the correctness property and how the tests check it. Every multi-threaded test runs for $P=1,2,3,4,5,8$ threads and five random seeds, and is repeated for the SC reference variant of each custom algorithm.
+
+{\small
+\begin{longtable}{|>{\raggedright\arraybackslash}p{\dimexpr 0.16\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr 0.24\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr 0.595\textwidth-2\tabcolsep-\arrayrulewidth\relax}|}
+\caption{Correctness properties and how they are tested (\texttt{tests/}).}\label{tab:test-props} \\
+\hline
+\textbf{Part} & \textbf{Property} & \textbf{Test} \\ \hline
+\endfirsthead
+\hline
+\textbf{Part} & \textbf{Property} & \textbf{Test} \\ \hline
+\endhead
+Locks & Mutual exclusion & Inside the critical section, each thread increments an atomic occupancy counter and checks that it was 0, then decrements it and checks that it was 1. A plain counter incremented under the lock must equal $P\times I$ at the end. \\ \hline
+Locks & Publication of protected data & A separate test keeps three plain variables that must satisfy an invariant (\texttt{mirror = version XOR mask}, \texttt{checksum = 3$\cdot$version+7}). Each owner checks it and updates all three. A stale read caused by a missing acquire or release breaks the invariant. This test has no atomic RMW inside the critical section, which could otherwise hide an ordering bug. \\ \hline
+Locks & Independence and RAII & Two lock instances held together; a lock released by \texttt{ScopedLock} during exception unwinding can be acquired again. \\ \hline
+MCS & Enqueue gap & A test hook stops the successor after it has swapped the tail but before it links itself. The test checks that the owner's release takes the CAS-failure path and waits instead of returning, and that the successor then enters. \\ \hline
+MCS & FIFO order & Three threads are released into the queue one at a time while the lock is held; they must enter in enqueue order 1, 2, 3. \\ \hline
+Barrier & No early release & With $P=2$, one thread arrives and must not leave until the second thread arrives; a hook confirms that the first arrival really happened. \\ \hline
+Barrier & Visibility and reuse & In each round, every thread writes its slot, passes the barrier and checks all slots of that round, over 1000 rounds. A second barrier call before the next round's writes keeps the test itself race-free. A second instance with half as many episodes checks that instances do not interfere. \\ \hline
+Barrier & Input validation & A barrier with $P=0$ is rejected. \\ \hline
+Counters & Linearizability & All values returned by $P\times I$ increments, sorted, must be exactly $0,1,\dots,P\cdot I-1$: a lost update gives a duplicate, a torn one a gap. The final value must be $P\times I$. \\ \hline
+Counters & Real-time order & On every 13th increment, a concurrent \texttt{value()} must be at least the value that increment returned plus one; after the join, the next increment must return the total. \\ \hline
+Workload & Primality and work split & \texttt{is\_prime} agrees with an independent square-root test for $N=0\dots10009$; splitting $K$ iterations among $P$ threads loses none, including $K<P$. \\ \hline
+Benchmarks & Measured work is real & Every benchmark run verifies its checksum (prime calls, or the sum of returned counter values) and fails otherwise; the command-line options are validated by a separate test. \\ \hline
+\end{longtable}
+}
+
+\subsection{Techniques that widen the interleavings}
+
+\textbf{Perturbation.} Inside the tests, each thread runs a xorshift random generator and yields the processor about once every 64 operations, at random points, so different seeds produce different schedules.
+
+\textbf{Directed hooks.} The MCS lock and the barrier take a hook type as a template parameter. In production it is an empty struct that compiles away; in the tests it blocks a thread at a precise point, which turns the rare enqueue gap into a deterministic test.
+
+\textbf{SC reference variants.} Every custom algorithm is also compiled with all operations sequentially consistent. If a test failed only for the acquire/release variant, the memory orders would be at fault rather than the algorithm.
+
+\textbf{Stress and oversubscription.} A \texttt{-{}-stress} mode repeats every test with ten times the work. One test per part runs more threads than there are logical CPUs, so threads are preempted while holding or waiting for the lock or barrier.
+
+\textbf{Sanitizers.} AddressSanitizer and UndefinedBehaviorSanitizer detect memory errors and undefined behavior. ThreadSanitizer instruments every memory access and reports any pair of conflicting accesses not ordered by happens-before. It therefore checks the memory-order reasoning of Section~\ref{sec:impl} directly: a missing release or acquire on a publication path appears as a race on the protected data.
+
+\subsection{Results}
+
+Table~\ref{tab:check-results} lists every check run on the code that was measured (source fingerprint \texttt{\detokenize{38a67327}}\dots). The Windows toolchain cannot run sanitizers, so the four test programs were also compiled with GCC~13.3 under WSL2 Ubuntu~24.04 on the same laptop. ThreadSanitizer first aborted with ``unexpected memory mapping'' before running any test, a known incompatibility between GCC~13's ThreadSanitizer and the address layout of recent Linux kernels; it was rerun with address-space randomization disabled (\texttt{setarch -R}).
+
+\begin{table}[H]
+\centering
+\small
+\caption{Correctness checks run for this report.}\label{tab:check-results}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr 0.36\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr 0.36\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr 0.275\textwidth-2\tabcolsep-\arrayrulewidth\relax}|}
+\hline
+\textbf{Check} & \textbf{Environment} & \textbf{Result} \\ \hline
+CTest, Debug build (6 groups) & Windows 11, MinGW-w64 GCC~13.2 & 6/6 passed \\ \hline
+CTest, Release build (6 groups) & Windows 11, MinGW-w64 GCC~13.2 & 6/6 passed \\ \hline
+Stress mode: locks, barriers, counters & Windows 11, Release & 3/3 passed \\ \hline
+AddressSanitizer + UndefinedBehaviorSanitizer (4 programs) & WSL2 Ubuntu 24.04, GCC~13.3, \texttt{-O1 -g} & 4/4 passed, no report \\ \hline
+ThreadSanitizer (4 programs, 31 test cases) & WSL2 Ubuntu 24.04, GCC~13.3, \texttt{-O1 -g}, \texttt{setarch -R} & 4/4 passed, 0 race warnings \\ \hline
+Checksum of every benchmark sample & Windows 11, Release & \NumSamples{} samples, 0 mismatches \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{Limitations}
+
+Tests and sanitizers explore only the interleavings that actually occur; they cannot prove the absence of every bug. The argument that the algorithms are correct for \emph{all} executions is the happens-before reasoning of Section~\ref{sec:impl}, and the tests are evidence that the implementation matches it. The measuring machine is x86, whose memory model is stronger than C++ requires, so a missing release or acquire might go unnoticed by the stress tests on this machine; ThreadSanitizer checks against the C++ model itself and does not depend on the hardware. The FIFO test checks queue order, not starvation freedom under every scheduler.

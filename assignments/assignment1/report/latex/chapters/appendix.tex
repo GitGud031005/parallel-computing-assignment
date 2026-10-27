@@ -1,0 +1,69 @@
+\newpage
+\section{Complete Result Tables}\label{app:tables}
+
+The tables in this appendix are generated from \texttt{results/processed/summary.csv} by \texttt{scripts/latex\_tables.py}; no value is typed by hand.
+
+\subsection{Locks, fixed total work}
+\input{generated/locks_fixed_w1}
+\input{generated/locks_fixed_w2}
+\input{generated/locks_fixed_w4}
+\input{generated/locks_fixed_w8}
+\input{generated/speedup_w1}
+\input{generated/speedup_w2}
+
+\subsection{Locks, per-thread work}
+\input{generated/locks_per_thread_w0}
+\input{generated/locks_per_thread_w1}
+\input{generated/locks_per_thread_w2}
+\input{generated/locks_per_thread_w4}
+\input{generated/locks_per_thread_w8}
+
+\subsection{Critical-section length}
+\input{generated/sensitivity_n97_w0}
+\input{generated/sensitivity_n97_w4}
+\input{generated/sensitivity_n10007_w0}
+\input{generated/sensitivity_n10007_w4}
+
+\subsection{Saturation run}
+\input{generated/saturation_locks_q3}
+
+\newpage
+\section{Reproduction and Submission}\label{app:repro}
+
+The submission ZIP built by \texttt{scripts/package\_submission.py} contains the PDF report, all C++ sources (\texttt{include/}, \texttt{src/}, \texttt{benchmarks/}, \texttt{tests/}), the CMake build files, the experiment configurations, the Python scripts and the raw and processed measurements of run \texttt{\RunID}. The commands below, run from the repository root on Windows with MSYS2 GCC, CMake and Ninja, rebuild the programs, rerun the tests and regenerate every table and figure.
+
+\begin{lstlisting}[language={},numbers=none,caption={Build and correctness tests.}]
+cmake -S . -B build/release -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build/release -j 8
+ctest --test-dir build/release/assignments/assignment1 --output-on-failure
+build/release/assignments/assignment1/test_locks --stress
+\end{lstlisting}
+
+\begin{lstlisting}[language={},numbers=none,caption={Benchmarks, summary, figures and report tables.}]
+A=assignments/assignment1
+python $A/scripts/run_benchmarks.py --bin-dir build/release/$A \
+  --matrix $A/config/benchmark_matrix.json --platform-id my-laptop \
+  --output results-local/run-01
+python $A/scripts/run_benchmarks.py --bin-dir build/release/$A \
+  --matrix $A/config/saturation_matrix.json --platform-id my-laptop \
+  --output results-local/saturation-01
+python $A/scripts/summarize.py --run-dir results-local/run-01 \
+  --output $A/results/processed
+python $A/scripts/summarize.py --run-dir results-local/saturation-01 \
+  --output $A/results/processed/saturation
+python $A/scripts/plot_results.py --summary $A/results/processed/summary.csv \
+  --output $A/results/figures
+python $A/scripts/latex_tables.py --run-dir results-local/run-01 \
+  --summary $A/results/processed/summary.csv \
+  --saturation $A/results/processed/saturation/summary.csv \
+  --output $A/report/latex/generated
+\end{lstlisting}
+
+\begin{lstlisting}[language={},numbers=none,caption={Single benchmark runs with the statement's parameters.}]
+bench_locks --implementation mcs --threads 8 --mode per_thread \
+  --iterations-per-thread 5000 --prime-n 997 --outside-work 4
+bench_barriers --implementation sense_reversing --threads 8 --episodes 20000
+bench_counters --implementation cas_backoff --threads 8 --total-operations 1000000
+\end{lstlisting}
+
+Each benchmark prints one JSON record with the configuration, the program and worker times, the checksum and the source fingerprint, and exits with a non-zero status if the checksum is wrong. The report itself is built with \texttt{latexmk -pdf -outdir=build main.tex} in \texttt{report/latex}.

@@ -1,0 +1,8 @@
+\section*{Abstract}
+\addcontentsline{toc}{section}{Abstract}
+
+This report presents the implementation, correctness testing and performance study of three classes of shared-memory synchronization required by Assignment~1: the TAS, TTAS and MCS spinlocks, a reusable Sense-Reversing Barrier, and concurrent counters built on mutual exclusion, compare-and-swap (CAS) and fetch-and-add (FAA). All are written in C++20 with explicit memory orders that follow the acquire/release discipline of the course, and are compared with \texttt{std::mutex} and \texttt{std::barrier}. Exponential backoff is evaluated as a variant of TTAS and of the CAS counter.
+
+Correctness is tested by property-based multi-threaded tests, directed tests that force rare interleavings such as the MCS enqueue gap, sequentially consistent reference variants, stress runs, and AddressSanitizer, UndefinedBehaviorSanitizer and ThreadSanitizer builds; every check passes. Performance is measured on a 16-thread hybrid laptop CPU with \NumSamples{} process-level samples. Spinlocks approach the Amdahl bound at low thread counts while \texttt{std::mutex} is slower than a single thread whenever half of the work is outside the lock. MCS collapses once spinning threads occupy every logical CPU, because a preempted successor blocks its FIFO queue. The spinning barrier outperforms \texttt{std::barrier} by about two orders of magnitude up to 12 threads, and no counter becomes faster than a single thread.
+
+\textbf{Keywords:} spinlock, MCS lock, sense-reversing barrier, compare-and-swap, fetch-and-add, C++ memory model, exponential backoff, scalability.

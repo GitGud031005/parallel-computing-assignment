@@ -1,0 +1,63 @@
+\newpage
+\section{Experimental Method}\label{sec:method}
+
+\subsection{Platform}\label{sec:platform}
+
+The statement asks for the study on all shared-memory platforms the student owns\cite{r1}. The student owns one, the laptop in Table~\ref{tab:platform}, and every measurement in this report comes from it. Its CPU is a hybrid design: 6 performance cores with two hardware threads each and 4 efficiency cores with one thread each, 16 logical CPUs in total. Windows decides where each thread runs; no affinity was set, so placement on performance or efficiency cores is part of what is measured.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Measurement platform, as recorded by the benchmark runner.}\label{tab:platform}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr 0.25\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr 0.745\textwidth-2\tabcolsep-\arrayrulewidth\relax}|}
+\hline
+\textbf{Property} & \textbf{Value} \\ \hline
+CPU & \CPUModel{}: 6 P-cores with HT and 4 E-cores; \PhysCores{} physical cores, \LogicalCPUs{} logical CPUs \\ \hline
+Memory & \MemGiB{} GiB \\ \hline
+Operating system & \OSName{} \\ \hline
+Power & \PowerScheme{}, \ACState{} \\ \hline
+Compiler & \Compiler{}, C++20, flags \texttt{\ReleaseFlags}, no link-time optimization, no sanitizer \\ \hline
+Build & \CMakeVersion{}, Ninja; source fingerprint \texttt{\detokenize{38a67327a7a796b1}}\dots \\ \hline
+Atomics & \texttt{uint64\_t}, \texttt{bool} and pointer atomics are lock-free; spin hint \texttt{\SpinHint} \\ \hline
+Thread placement & Not pinned; chosen by the Windows scheduler \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{Experiments and parameters}\label{sec:matrix}
+
+Table~\ref{tab:matrix} lists the experiments. Every experiment runs every implementation for $P\in\{\ThreadList\}$. These values cover 1 to 4 threads, the 6 performance cores, the 10 physical cores, and 12 and 14 threads, which use Hyper-Threading siblings. Threads 15 and 16, which fill every logical CPU, are measured in a separate saturation run (last row) because in a first attempt single MCS samples at $P=16$ exceeded the 60-second timeout; Section~\ref{sec:res-saturation} reports it.
+
+\begin{table}[H]
+\centering
+\small
+\caption[Experiment matrix]{Experiment matrix (\texttt{config/benchmark\_matrix.json} and \texttt{config/saturation\_matrix.json}).}\label{tab:matrix}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr 0.2\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr 0.32\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr 0.475\textwidth-2\tabcolsep-\arrayrulewidth\relax}|}
+\hline
+\textbf{Experiment} & \textbf{Implementations} & \textbf{Parameters} \\ \hline
+Locks, fixed total & TAS, TTAS, TTAS-backoff, MCS, \texttt{std::mutex} & $N=997$, $W\in\{0,1,2,4,8\}$, $K=20000$ \\ \hline
+Locks, per thread & same & $N=997$, $W\in\{0,1,2,4,8\}$, $I=5000$ \\ \hline
+Short critical section & same & $N=97$, $W\in\{0,4\}$, $K=200000$ \\ \hline
+Long critical section & same & $N=10007$, $W\in\{0,4\}$, $K=2000$ \\ \hline
+Barriers & sense-reversing, \texttt{std::barrier} & $E=20000$ episodes \\ \hline
+Counters & mutex with TAS, TTAS, MCS, \texttt{std::mutex}; CAS; CAS-backoff; FAA & $K=1000000$ increments in total \\ \hline
+Saturation & all locks; both barriers & $P\in\{12,14,15,16\}$; locks $N=997$, $W=0$, $K=20000$; barriers $E=20000$ \\ \hline
+\end{tabular}
+\end{table}
+
+$N=997$ is prime, so the primality loop never stops early. $K$ and $I$ were chosen so that a single-thread lock or counter run takes about 14 to 780~ms, long enough to dominate thread start-up and short enough to repeat many times. $K$ differs between the short and long critical-section experiments for the same reason, so implementations are compared within an experiment, not across experiments.
+
+\subsection{Metrics}\label{sec:metrics}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Locks and counters: program time}, from just before the first thread is created until after the last join, as required by the statement for locks and counters.
+  \item \textbf{Speedup} $S(P)=T(1)/T(P)$, the ratio of median program times of the same implementation, computed only in fixed-total mode, where the total work does not depend on $P$. Per-thread times are reported as they are.
+  \item \textbf{Barriers: global episodes per second}, $E/t_w$, where $t_w$ is the worker time from the first worker leaving the start gate to the last worker finishing. One episode is one completed barrier phase of all $P$ threads, as the statement defines it; $P\cdot E/t_w$ would count arrivals instead and overstate the rate by a factor of $P$. Worker time is used because thread creation is not part of a barrier episode.
+\end{itemize}
+
+\subsection{Measurement protocol}\label{sec:protocol}
+
+Each configuration is a separate process, run \Warmups{} times as warm-up and then \Reps{} times measured, so the main run has \NumConfigs{} configurations and \NumSamples{} samples. Configurations are executed one at a time in an order shuffled with the fixed seed \OrderSeed{}, so that slow drift of the machine, for example from heat, does not fall on one implementation. Every sample verifies its checksum, and a process that exceeds \TimeoutS{}~s is stopped and recorded as a timeout. Results are summarized by the median and the interquartile range (IQR) of the measured samples; these describe the samples and are not confidence intervals.
+
+The main run produced \NumFailedMeasured{} failed measured samples and \NumFailedWarmups{} failed warm-up: one MCS warm-up at $P=14$ (per-thread mode, $W=4$) exceeded the timeout. Warm-ups are excluded from the statistics by design, so every configuration has all \Reps{} measured samples. The saturation run used one warm-up, five measured samples and a 120-second timeout; none of its 168 samples failed.
+
+Background applications were closed and the laptop was on AC power in the \PowerScheme{} profile. Other Windows activity could not be excluded and is a source of noise, which the IQR makes visible.

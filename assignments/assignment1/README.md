@@ -2,7 +2,7 @@
 
 Project C++20 cài đặt TAS/TTAS/MCS, Sense-Reversing Barrier và concurrent counters bằng mutex/CAS/FAA. Có baseline `std::mutex`/`std::barrier`, TTAS/CAS exponential backoff, correctness tests và pipeline benchmark/report. MPI-3 RMA là phần tùy chọn, chưa triển khai.
 
-GitHub chứa code và tài liệu tự viết. **Slide và PDF đề gốc không được đưa lên GitHub.** Báo cáo tiếng Anh: [Assignment 1 PDF](report/Assignment1_Report_EN.pdf) (10 trang). Dữ liệu đo, logs, hình rời và ZIP giữ cục bộ; xem [results](results/README.md). Kết quả đối chiếu lần cuối ở [verification.md](docs/verification.md).
+GitHub chứa code và tài liệu tự viết. **Slide và PDF đề gốc không được đưa lên GitHub.** Báo cáo nộp là bản LaTeX theo template HCMUT ở [report/latex](report/latex/); PDF build ra `report/latex/build/main.pdf` và nằm ở gốc ZIP dưới tên `Assignment1_Report.pdf`. Dữ liệu đo, logs, hình rời và ZIP giữ cục bộ; xem [results](results/README.md). Kết quả đối chiếu lần cuối ở [verification.md](docs/verification.md).
 
 ## Đọc theo kiến thức môn học
 
@@ -181,22 +181,25 @@ python3 assignments/assignment1/scripts/run_benchmarks.py --bin-dir build/releas
 python3 assignments/assignment1/scripts/summarize.py --run-dir results-local/smoke-01 --output results-local/smoke-summary
 ```
 
-Smoke có 57 configurations ngắn, không dùng kết luận performance. `pilot_matrix.json` dùng chọn workload. `benchmark_matrix.json` có 395 configurations × (2 warmups + 7 measured reps) = 3555 samples; chỉnh threads/workload theo máy trước phép đo chính, giữ cùng tham số trong mỗi series so sánh.
+Smoke có 57 configurations ngắn, không dùng kết luận performance. `pilot_matrix.json` dùng chọn workload. `benchmark_matrix.json` có 711 configurations × (2 warmups + 7 measured reps) = 6399 samples với P = 1–14; `saturation_matrix.json` đo riêng P = 12–16, nơi MCS và barrier spin bị preemption làm sập. Giữ cùng tham số trong mỗi series so sánh.
 
 ```bash
-python3 -m pip install -r assignments/assignment1/scripts/requirements.txt
-python3 assignments/assignment1/scripts/run_benchmarks.py --bin-dir build/release/assignments/assignment1 --matrix assignments/assignment1/config/benchmark_matrix.json --platform-id my-computer --revision working-tree --output results-local/run-01
-python3 assignments/assignment1/scripts/summarize.py --run-dir results-local/run-01 --output results-local/processed
-python3 assignments/assignment1/scripts/plot_results.py --summary results-local/processed/summary.csv --output results-local/figures
-python3 assignments/assignment1/scripts/create_report.py --run-dir results-local/run-01 --summary results-local/processed/summary.csv --figures results-local/figures --checks validation-local/check-01/checks.json --output assignments/assignment1/report
-python3 assignments/assignment1/scripts/package_submission.py
+A=assignments/assignment1
+python3 $A/scripts/run_benchmarks.py --bin-dir build/release/$A --matrix $A/config/benchmark_matrix.json --platform-id my-computer --revision working-tree --output results-local/run-01
+python3 $A/scripts/run_benchmarks.py --bin-dir build/release/$A --matrix $A/config/saturation_matrix.json --platform-id my-computer --revision working-tree --output results-local/saturation-01
+python3 $A/scripts/summarize.py --run-dir results-local/run-01 --output $A/results/processed
+python3 $A/scripts/summarize.py --run-dir results-local/saturation-01 --output $A/results/processed/saturation
+python3 $A/scripts/plot_results.py --summary $A/results/processed/summary.csv --output $A/results/figures
+python3 $A/scripts/latex_tables.py --run-dir results-local/run-01 --summary $A/results/processed/summary.csv --saturation $A/results/processed/saturation/summary.csv --output $A/report/latex/generated
+(cd $A/report/latex && latexmk -pdf -outdir=build main.tex)
+python3 $A/scripts/package_submission.py
 ```
 
-Thay `--revision working-tree` bằng commit SHA đã checkout khi đo bản Git đã chốt; source fingerprint vẫn được kiểm độc lập. Matplotlib/ReportLab chỉ cần cho plots/PDF; PDF cần font Unicode DejaVu hoặc Arial (`create_report.py --font-dir` nếu cần).
+Thay `--revision working-tree` bằng commit SHA đã checkout khi đo bản Git đã chốt; source fingerprint vẫn được kiểm độc lập. Matplotlib chỉ cần cho plots; báo cáo cần TeX Live hoặc MiKTeX có `latexmk`. Hình trong `results/figures` phải được chép vào `report/latex/figures` sau khi vẽ lại.
 
-Runner từ chối binary cũ, Debug, sanitizer và LTO flags đã nhận diện; chạy process tuần tự với thứ tự seeded, giữ cả lỗi/timeout. Summary kiểm checksum, duplicate và tính đầy đủ; bỏ warmup khi tính median/IQR. Run directory phải chưa tồn tại; không sửa tay raw CSV. Tạo report cần checks cùng source và đầy đủ figures từ validated summary. Đóng gói cần `report.pdf` và `report.md`, tạo ZIP mặc định `dist/Assignment1_GitGud031005.zip` cùng SHA-256 manifest. Đây là ZIP nộp cục bộ, không phải nội dung GitHub.
+Runner từ chối binary cũ, Debug, sanitizer và LTO flags đã nhận diện; chạy process tuần tự với thứ tự seeded, giữ cả lỗi/timeout. Summary kiểm checksum, duplicate và tính đầy đủ; bỏ warmup khi tính median/IQR, và một warmup lỗi được ghi lại nhưng không chặn phân tích. Run directory phải chưa tồn tại; không sửa tay raw CSV. Đóng gói lấy `report/latex/build/main.pdf`, từ chối nếu PDF cũ hơn nguồn LaTeX hoặc code C++ được nhúng, rồi tạo ZIP mặc định `dist/Assignment1_GitGud031005.zip` cùng SHA-256 manifest. Đây là ZIP nộp cục bộ, không phải nội dung GitHub.
 
-Đã có reference study trong managed Linux và report/ZIP riêng; số liệu đó không phải laptop người nộp. Hãy chạy trên các shared-memory machines thực sở hữu để hoàn tất yêu cầu phần cứng, ghi rõ quota/ảo hóa nếu có. Không suy rằng MCS/FAA luôn nhanh nhất từ lý thuyết hoặc một lần đo.
+Số liệu trong báo cáo đo trên laptop của người nộp (Intel Core i7-13620H, 6 P-core + 4 E-core, 16 logical CPUs, Windows 11, MinGW-w64 GCC 13.2), run `run-laptop-02` và `saturation-laptop-01`. Không suy rằng MCS/FAA luôn nhanh nhất từ lý thuyết hoặc một lần đo.
 
 ## 9. Khi sửa code
 

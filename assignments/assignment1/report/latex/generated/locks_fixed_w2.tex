@@ -1,0 +1,15 @@
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\caption{Median program time (ms), fixed total $K=20000$, $N=997$, $W=2$. Bold: fastest at each $P$.}\label{tab:locks-fixed-w2}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr 0.200\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|}
+\hline
+\textbf{Lock (ms)} & \textbf{P=1} & \textbf{P=2} & \textbf{P=3} & \textbf{P=4} & \textbf{P=6} & \textbf{P=8} & \textbf{P=10} & \textbf{P=12} & \textbf{P=14} \\ \hline
+\texttt{tas} & 260.6 & 132.9 & 98.7 & 103.6 & 109.4 & 129.0 & 129.1 & 142.1 & 150.0 \\ \hline
+\texttt{ttas} & \textbf{259.5} & \textbf{132.5} & 96.4 & 106.3 & 117.8 & 118.9 & \textbf{119.5} & 132.3 & \textbf{136.4} \\ \hline
+\texttt{ttas\_backoff} & 262.0 & 132.9 & \textbf{94.0} & 105.7 & \textbf{105.0} & 123.1 & 123.3 & \textbf{126.7} & 138.5 \\ \hline
+\texttt{mcs} & 259.7 & 133.2 & 97.3 & \textbf{95.3} & 106.0 & \textbf{115.5} & 142.9 & 176.1 & 290.8 \\ \hline
+\texttt{std\_mutex} & 260.5 & 135.1 & 230.1 & 203.6 & 240.8 & 216.7 & 213.4 & 210.1 & 223.9 \\ \hline
+\end{tabular}
+\end{table}

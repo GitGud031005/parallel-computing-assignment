@@ -1,0 +1,109 @@
+% longtable v4.24 (10/2025) báo "Infinite glue shrinkage" ở mọi chỗ bảng ngắt trang; dùng bản v4.13 kèm sẵn.
+\makeatletter\declare@file@substitution{longtable.sty}{longtable-2020-01-07.sty}\makeatother
+\PassOptionsToPackage{table}{xcolor}
+\documentclass[twoside,final]{hcmut-report}
+\usepackage{pdflscape}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{xcolor}
+
+\setlength{\LTleft}{0pt}
+\setlength{\LTright}{0pt}
+\setlength{\emergencystretch}{3em}
+
+\definecolor{codebg}{gray}{0.96}
+\definecolor{codecomment}{rgb}{0.25,0.45,0.25}
+\definecolor{codekeyword}{rgb}{0.10,0.20,0.55}
+\lstdefinestyle{cpp}{
+  language=C++, basicstyle=\ttfamily\scriptsize, keywordstyle=\color{codekeyword}\bfseries,
+  commentstyle=\color{codecomment}\itshape, backgroundcolor=\color{codebg}, frame=single,
+  rulecolor=\color{gray!60}, numbers=left, numberstyle=\tiny\color{gray}, numbersep=6pt,
+  breaklines=true, breakatwhitespace=true, columns=fullflexible, keepspaces=true,
+  showstringspaces=false, tabsize=4, captionpos=t, xleftmargin=1.5em, framexleftmargin=1.5em,
+  morekeywords={noexcept,constexpr,nullptr,alignas,template,typename,using}
+}
+\lstset{style=cpp}
+\renewcommand{\lstlistingname}{Listing}
+\renewcommand{\lstlistlistingname}{List of Listings}
+\newcommand{\src}{../..}
+
+\input{generated/facts}
+
+\coursename{Parallel Computing (CO5133)}
+\reporttype{Assignment 1 Report}
+\title{Shared-Memory Synchronization: Spinlocks, a Sense-Reversing Barrier and Concurrent Counters}
+\advisor{Dr. Diep Thanh Dang}
+\stuname{Nguyễn Hữu Phúc}
+\newcommand{\stuid}{2352938}
+
+% Same cover as hcmut-report.cls, but one advisor, no group row, and the student ID on its own row.
+\makeatletter
+\renewcommand{\coverpage}{
+  \pagestyle{empty}
+  \vspace*{-3\baselineskip}
+  \begin{center}
+    \MakeUppercase{\@upperuniname}
+
+    \MakeUppercase{\@uniname}
+
+    \MakeUppercase{\@deptname}
+    \vfill
+    \includegraphics[scale=0.4]{graphics/hcmut.png}
+    \vfill
+    \bfseries
+    \begin{tabular}{c}
+      \Large\@coursename                                 \\
+      {}                                                 \\
+      \midrule                                           \\
+      {}                                                 \\
+      \Large\@reporttype                                 \\
+      {}                                                 \\
+      \Huge\parbox[c]{0.8\linewidth}{\centering \@title} \\
+      {}                                                 \\
+      \bottomrule
+    \end{tabular}
+    \vfill
+    \mdseries
+    \begin{tabular}{rl}
+      Advisor: & \@advisor \\
+      Student: & \@stuname \\
+      Student ID: & \stuid \\
+    \end{tabular}
+    \vfill
+    \MakeUppercase{\@reportplace, \@reporttime}
+  \end{center}
+  \clearpage
+  \pagestyle{fancy}
+}
+\makeatother
+
+\begin{document}
+
+\coverpage%
+
+\input{chapters/00-abstract}
+\newpage
+\tableofcontents
+\newpage
+\input{chapters/00-list-of-abbreviations}
+\newpage
+\listoffigures
+\addcontentsline{toc}{section}{List of Figures}
+\listoftables
+\addcontentsline{toc}{section}{List of Tables}
+\lstlistoflistings
+\addcontentsline{toc}{section}{List of Listings}
+
+\input{chapters/ch1}
+\input{chapters/ch2}
+\input{chapters/ch3}
+\input{chapters/ch4}
+\input{chapters/ch5}
+\input{chapters/ch6}
+\input{chapters/ch7}
+
+\input{references}
+
+\appendix
+\input{chapters/appendix}
+\end{document}

@@ -1,0 +1,56 @@
+\newpage
+\section{Introduction}\label{sec:intro}
+
+\subsection{Assignment overview}
+
+Assignment~1\cite{r1} asks for three shared-memory synchronization mechanisms discussed in the lecture, each to be implemented in C++, tested for correctness and studied for performance and scalability on the shared-memory platforms the student owns:
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{Mutex locks.} The TAS, TTAS and MCS spinlocks, exercised by a program in which every thread repeatedly acquires the lock, checks whether a number $N$ is prime inside the critical section, releases the lock and then performs \texttt{OUTSIDE\_WORK} further primality checks outside it. The metric is the execution time of the whole program, and the locks are to be compared with existing mutex implementations.
+  \item \textbf{Barrier synchronization.} A Sense-Reversing Barrier, measured by the number of completed barrier episodes per unit time with no useful work between barriers, and compared with existing barriers.
+  \item \textbf{Concurrent counters.} Counters synchronized by mutex locks, compare-and-swap and fetch-and-add, measured by execution time.
+\end{enumerate}
+
+Exponential backoff is suggested for mutex locks, barriers and counters, and a fourth part on distributed versions using MPI-3 one-sided communication is optional.
+
+\subsection{Requirements and where they are addressed}
+
+Table~\ref{tab:requirements} lists every requirement of the statement and the part of this report that addresses it.
+
+{\small
+\begin{longtable}{|>{\raggedright\arraybackslash}p{\dimexpr 0.07\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr 0.48\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr 0.445\textwidth-2\tabcolsep-\arrayrulewidth\relax}|}
+\caption[Assignment requirements and where this report addresses them]{Assignment requirements\cite{r1} and where this report addresses them.}\label{tab:requirements} \\
+\hline
+\textbf{ID} & \textbf{Requirement} & \textbf{Addressed in} \\ \hline
+\endfirsthead
+\hline
+\textbf{ID} & \textbf{Requirement} & \textbf{Addressed in} \\ \hline
+\endhead
+L1 & Implement TAS, TTAS and MCS for multi-threaded C++ programs & Sections~\ref{sec:impl-tas}--\ref{sec:impl-mcs}, Listings~\ref{lst:tas}--\ref{lst:mcs} \\ \hline
+L2 & Devise an approach to testing their correctness & Section~\ref{sec:testing} \\ \hline
+L3 & Test the locks in the given program: \texttt{is\_prime(N)} inside the lock, \texttt{OUTSIDE\_WORK} calls outside, \texttt{NUM\_OF\_THREADS} and \texttt{NUM\_OF\_ITERS} & Section~\ref{sec:impl-workload}, Table~\ref{tab:macro-map} \\ \hline
+L4 & Performance and scalability study by execution time of the whole program while tuning the parameters & Sections~\ref{sec:method} and~\ref{sec:res-locks}--\ref{sec:res-saturation} \\ \hline
+L5 & Compare with existing mutex locks & \texttt{std::mutex} in every lock experiment, Section~\ref{sec:res-stdmutex} \\ \hline
+L6 & Exponential backoff for locks & TTAS with backoff, Sections~\ref{sec:impl-backoff} and~\ref{sec:res-backoff} \\ \hline
+B1 & Implement the Sense-Reversing Barrier in C++ & Section~\ref{sec:impl-barrier}, Listing~\ref{lst:barrier} \\ \hline
+B2 & Devise an approach to testing its correctness & Section~\ref{sec:testing} \\ \hline
+B3 & Study performance and scalability by completed episodes per unit time with no useful work between barriers & Sections~\ref{sec:metrics} and~\ref{sec:res-barrier} \\ \hline
+B4 & Compare with existing barriers & \texttt{std::barrier}, Section~\ref{sec:res-barrier} \\ \hline
+C1 & Implement concurrent counters with mutex locks, CAS and FAA & Section~\ref{sec:impl-counters}, Listings~\ref{lst:mutex-counter}--\ref{lst:faa} \\ \hline
+C2 & Devise an approach to testing their correctness & Section~\ref{sec:testing} \\ \hline
+C3 & Study performance and scalability by execution time; backoff may be used & Section~\ref{sec:res-counters}; CAS with backoff \\ \hline
+X1 & Run the studies on all shared-memory platforms the student owns & Section~\ref{sec:platform} \\ \hline
+O1 & Distributed versions with MPI-3 one-sided communication (optional) & Not implemented; Section~\ref{sec:future} \\ \hline
+S1 & Submit a ZIP with the final PDF report and all relevant C++ source code & Appendix~\ref{app:repro} \\ \hline
+\end{longtable}
+}
+
+\subsection{Scope}
+
+All three required parts are implemented, tested and measured. Two variants are added beyond the minimum: TTAS with exponential backoff and a CAS counter with exponential backoff. The barrier has no backoff variant. Each sequentially consistent (SC) variant of the custom algorithms is used only as a reference in the tests. The optional MPI-3 part is not implemented.
+
+The study runs on one platform, the student's laptop, which is the only shared-memory machine the student owns. It is described in Section~\ref{sec:platform}.
+
+\subsection{Report structure}
+
+Section~\ref{sec:background} summarizes the course material the implementation relies on. Section~\ref{sec:impl} presents the implementation with its source code, and Section~\ref{sec:testing} the correctness testing approach and its results. Section~\ref{sec:method} describes the experimental method, Section~\ref{sec:results} the results, and Section~\ref{sec:conclusion} concludes. The appendices contain the complete result tables and the commands that reproduce every number in this report.

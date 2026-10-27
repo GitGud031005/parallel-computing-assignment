@@ -1,0 +1,15 @@
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\caption{Saturation run: median program time (ms), $N=997$, $W=0$, $K=20000$, five measured runs. Bold: fastest at each $P$.}\label{tab:saturation-locks}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr 0.200\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.199\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.199\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.199\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.199\textwidth-2\tabcolsep-\arrayrulewidth\relax}|}
+\hline
+\textbf{Lock (ms)} & \textbf{P=12} & \textbf{P=14} & \textbf{P=15} & \textbf{P=16} \\ \hline
+\texttt{tas} & 107.4 & 113.2 & 108.5 & 109.0 \\ \hline
+\texttt{ttas} & 97.4 & 98.1 & \textbf{104.3} & \textbf{102.5} \\ \hline
+\texttt{ttas\_backoff} & \textbf{96.8} & \textbf{91.4} & 117.2 & 113.5 \\ \hline
+\texttt{mcs} & 116.3 & 160.1 & 333.4 & 2\,468.2 \\ \hline
+\texttt{std\_mutex} & 119.9 & 121.9 & 121.1 & 121.6 \\ \hline
+\end{tabular}
+\end{table}

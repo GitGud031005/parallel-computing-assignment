@@ -1,0 +1,15 @@
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\caption{Median program time (ms), per-thread $I=5000$, $N=997$, $W=2$; total work grows with $P$.}\label{tab:locks-per-thread-w2}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr 0.200\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|}
+\hline
+\textbf{Lock (ms)} & \textbf{P=1} & \textbf{P=2} & \textbf{P=3} & \textbf{P=4} & \textbf{P=6} & \textbf{P=8} & \textbf{P=10} & \textbf{P=12} & \textbf{P=14} \\ \hline
+\texttt{tas} & 65.3 & 67.9 & 73.1 & 103.3 & 168.0 & 248.0 & 331.3 & 413.8 & 522.6 \\ \hline
+\texttt{ttas} & 65.3 & 67.0 & 70.6 & 104.8 & 164.0 & \textbf{237.9} & 298.0 & \textbf{374.0} & 470.8 \\ \hline
+\texttt{ttas\_backoff} & 65.4 & 67.8 & \textbf{70.3} & 103.1 & \textbf{150.9} & 240.6 & 300.1 & 380.1 & \textbf{465.2} \\ \hline
+\texttt{mcs} & \textbf{65.3} & \textbf{66.5} & 71.9 & \textbf{96.8} & 153.5 & 238.5 & \textbf{283.1} & 401.4 & 743.3 \\ \hline
+\texttt{std\_mutex} & 65.3 & 67.4 & 182.5 & 234.3 & 325.0 & 401.3 & 533.7 & 669.1 & 744.2 \\ \hline
+\end{tabular}
+\end{table}

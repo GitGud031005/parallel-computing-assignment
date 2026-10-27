@@ -1,0 +1,17 @@
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\caption{Median program time (ms) for $K=1000000$ increments in total. Bold: fastest at each $P$.}\label{tab:counters}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr 0.200\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|}
+\hline
+\textbf{Counter (ms)} & \textbf{P=1} & \textbf{P=2} & \textbf{P=3} & \textbf{P=4} & \textbf{P=6} & \textbf{P=8} & \textbf{P=10} & \textbf{P=12} & \textbf{P=14} \\ \hline
+\texttt{mutex\_tas} & 19.5 & 90.5 & 155.6 & 196.6 & 293.4 & 473.8 & 468.0 & 720.6 & 731.0 \\ \hline
+\texttt{mutex\_ttas} & 19.4 & 94.3 & 153.8 & 151.7 & 245.5 & 283.7 & 322.8 & 362.4 & 403.7 \\ \hline
+\texttt{mutex\_mcs} & 37.3 & 304.4 & 386.3 & 335.7 & 356.7 & 359.3 & 369.4 & 401.4 & 629.4 \\ \hline
+\texttt{mutex\_std} & 35.6 & 111.4 & 62.1 & 71.4 & 100.0 & 123.2 & 136.4 & 142.6 & 148.7 \\ \hline
+\texttt{cas} & 24.4 & 55.9 & 73.8 & 77.7 & 76.4 & 94.5 & 85.5 & 97.9 & 116.0 \\ \hline
+\texttt{cas\_backoff} & 23.9 & \textbf{24.6} & \textbf{24.8} & \textbf{24.9} & \textbf{26.2} & \textbf{27.1} & \textbf{26.9} & \textbf{28.3} & \textbf{28.0} \\ \hline
+\texttt{faa} & \textbf{13.7} & 33.3 & 37.9 & 35.3 & 43.4 & 38.6 & 45.1 & 42.7 & 44.8 \\ \hline
+\end{tabular}
+\end{table}

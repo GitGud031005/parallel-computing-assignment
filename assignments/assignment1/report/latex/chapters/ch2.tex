@@ -1,0 +1,81 @@
+\newpage
+\section{Background}\label{sec:background}
+
+This section summarizes the course material\cite{r2} that the implementation in Section~\ref{sec:impl} is built on.
+
+\subsection{Memory ordering and happens-before}
+
+Cache coherence guarantees that all cores agree on the order of writes to a \emph{single} location, but it says nothing about the order in which writes to \emph{different} locations become visible. Most hardware therefore implements a relaxed memory model, and synchronizing operations must restrict reordering explicitly. The slides write such a restriction as $P\|S$: preceding accesses of kind $P$ may not move after the operation, and subsequent accesses of kind $S$ may not move before it. A lock acquire needs $\|RW$ so that the critical section cannot move above it, and a release needs $RW\|$ so that the critical section cannot move below it.
+
+C++ expresses the same idea through the \emph{happens-before} relation. Two conflicting accesses to a non-atomic object that are not ordered by happens-before form a data race, which is undefined behavior. Between threads, happens-before is established when a release store \emph{synchronizes with} an acquire load that reads the stored value. Table~\ref{tab:orders} maps the slide notation to the C++ orders used in this work.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Ordering restrictions in the slide notation and their C++ counterparts.}\label{tab:orders}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr 0.17\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr 0.31\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr 0.515\textwidth-2\tabcolsep-\arrayrulewidth\relax}|}
+\hline
+\textbf{Slides} & \textbf{C++ order} & \textbf{Use in this work} \\ \hline
+$\|RW$ (acquire) & \texttt{memory\_order\_acquire} & Successful lock RMW, waiting loads that end a wait \\ \hline
+$RW\|$ (release) & \texttt{memory\_order\_release} & Lock release, MCS handoff, barrier sense flip \\ \hline
+$RW\|RW$ & \texttt{memory\_order\_acq\_rel} & MCS tail exchange, barrier arrival counter \\ \hline
+none & \texttt{memory\_order\_relaxed} & Polling hints, counter values that publish no other data \\ \hline
+total order & \texttt{memory\_order\_seq\_cst} & Reference variants in the tests only \\ \hline
+\end{tabular}
+\end{table}
+
+Sequential consistency is stronger than acquire/release because it also imposes one total order on all SC operations. The algorithms in this assignment only need pairwise publication from one thread to the next, so acquire/release is sufficient, and SC variants serve as a cross-check in the tests.
+
+\subsection{Atomic read-modify-write operations}
+
+The spinlocks and counters rely on four read-modify-write (RMW) operations of \texttt{std::atomic}:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Test-and-set} (\texttt{atomic\_flag::test\_and\_set}) sets a flag and returns its previous value.
+  \item \textbf{Exchange} stores a new value and returns the previous one; MCS uses it as \emph{swap} on the queue tail.
+  \item \textbf{Compare-and-swap} (\texttt{compare\_exchange\_weak/strong}) stores a desired value only if the object still holds an expected value; on failure it writes the value found back into \texttt{expected}. The weak form may fail spuriously and belongs in a retry loop; the strong form fails only if the values differ.
+  \item \textbf{Fetch-and-add} (\texttt{fetch\_add}) adds atomically and returns the original value.
+\end{itemize}
+
+\subsection{Spinlocks}\label{sec:bg-locks}
+
+\textbf{TAS} spins on \texttt{test\_and\_set} until it returns \texttt{false}. Every waiting iteration is an RMW that needs exclusive ownership of the cache line, so waiting threads keep invalidating each other's copies. \textbf{TTAS} spins on a plain read until the lock appears free and only then attempts the RMW, so the waiting phase is served from each core's cache. Neither lock guarantees fairness. Both are treated in depth in the textbooks the slides recommend\cite{r4,r5}.
+
+\textbf{MCS}\cite{r3} keeps waiting threads in a singly linked queue. A thread appends its own node by swapping the tail pointer, links itself behind its predecessor, and spins on a flag in its own node. Release hands the lock directly to the successor. If no successor is visible, release tries to reset the tail to null with CAS; when the CAS fails, a successor has already swapped the tail but has not yet linked itself, and the releasing thread must wait for that link. MCS is FIFO and spins on distinct locations, but its interface requires a queue node per thread. Table~\ref{tab:lock-props} summarizes the differences.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Properties of the three spinlocks.}\label{tab:lock-props}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr 0.16\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr 0.28\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr 0.28\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr 0.275\textwidth-2\tabcolsep-\arrayrulewidth\relax}|}
+\hline
+\textbf{Property} & \textbf{TAS} & \textbf{TTAS} & \textbf{MCS} \\ \hline
+Waiting spins on & Shared flag, with RMW & Shared flag, with loads & Own queue node \\ \hline
+Fairness & None & None & FIFO in enqueue order \\ \hline
+Traffic at release & All waiters retry RMW & All waiters see the change and retry & One store to the successor's node \\ \hline
+Interface & \texttt{acquire()} & \texttt{acquire()} & \texttt{acquire(qnode*)} \\ \hline
+Expected strength & Few cores, low contention & Few cores, low contention & Many cores, high contention \\ \hline
+\end{tabular}
+\end{table}
+
+The slides add that test-and-set locks work well for few cores and low contention, that exponential backoff helps them under contention, and that queue locks such as MCS scale better under contention.
+
+\subsection{Barriers}\label{sec:bg-barrier}
+
+A barrier must make every write before the barrier visible to every thread after it, so arrival needs release semantics and departure acquire semantics. A centralized barrier counts arrivals with an atomic increment. Two naive versions fail: spinning on the counter misses the triggering value once the last thread resets it, and spinning on one flag that must be reset cannot separate consecutive episodes. The \textbf{sense-reversing barrier} solves both by flipping a thread-local sense in every episode and spinning until the global sense equals it; the last arrival resets the counter and then flips the global sense. Spinning is cheap on a cache-coherent machine, but the shared counter is a contention point on large systems.
+
+\subsection{Concurrent counters and progress}\label{sec:bg-counters}
+
+A counter whose increment holds a lock is \emph{blocking}: a delayed thread inside the lock, for example one preempted by the scheduler, delays every other thread. A CAS retry loop is \emph{lock-free}: some increment always completes, although an individual thread may retry indefinitely. A single fetch-and-add instruction lets every thread finish in a bounded number of its own steps. All three are \emph{linearizable}: each increment appears to take effect atomically at one point between its invocation and its response, so the values returned by $K$ increments are exactly $0,1,\dots,K-1$.
+
+\subsection{Exponential backoff}\label{sec:bg-backoff}
+
+When many threads retry the same RMW, most attempts fail and each attempt moves the cache line. Exponential backoff makes a thread wait after each failure, doubling the wait up to a maximum, so that retries spread out in time. The statement\cite{r1} sketches backoff with \texttt{std::this\_thread::sleep\_for} in nanoseconds; Section~\ref{sec:impl-backoff} explains why this implementation waits with CPU pause instructions instead.
+
+\subsection{Speedup bound of the lock workload}\label{sec:amdahl}
+
+In the program of the statement, each iteration makes one \texttt{is\_prime(N)} call inside the critical section and $W=\texttt{OUTSIDE\_WORK}$ calls outside it. Let one call cost $c$ and let $K$ be the total number of iterations. One thread needs $T(1)\approx K(W+1)c$. With $P$ threads, the $K$ calls inside the critical section still execute one at a time, so $T(P)\ge Kc$, and the total work gives $T(P)\ge K(W+1)c/P$. By Amdahl's law\cite{r6},
+\begin{equation}
+  S(P)=\frac{T(1)}{T(P)}\le\min\left(P,\;W+1\right).\label{eq:amdahl}
+\end{equation}
+For $W=0$ no speedup is possible, and the bound for $W=1,2,4,8$ is $2,3,5,9$. The bound ignores the cost of passing the lock between threads, which is exactly what distinguishes the implementations in Section~\ref{sec:results}.

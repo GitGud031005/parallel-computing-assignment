@@ -1,0 +1,15 @@
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\caption{Median program time (ms), $N=97$, fixed total $K=200000$, $W=4$.}\label{tab:sens-n97-w4}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr 0.200\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.088\textwidth-2\tabcolsep-\arrayrulewidth\relax}|}
+\hline
+\textbf{Lock (ms)} & \textbf{P=1} & \textbf{P=2} & \textbf{P=3} & \textbf{P=4} & \textbf{P=6} & \textbf{P=8} & \textbf{P=10} & \textbf{P=12} & \textbf{P=14} \\ \hline
+\texttt{tas} & 409.0 & 235.3 & 174.2 & 177.8 & 208.5 & 258.5 & 291.2 & 328.8 & 346.2 \\ \hline
+\texttt{ttas} & 410.9 & 230.9 & 168.1 & 160.4 & 167.8 & 193.1 & 215.3 & 224.9 & 245.6 \\ \hline
+\texttt{ttas\_backoff} & \textbf{407.6} & 233.5 & 162.8 & \textbf{144.4} & 174.3 & 186.4 & 200.3 & \textbf{214.1} & \textbf{225.8} \\ \hline
+\texttt{mcs} & 409.8 & 232.9 & \textbf{160.7} & 178.6 & \textbf{166.6} & \textbf{163.1} & \textbf{180.2} & 222.2 & 314.1 \\ \hline
+\texttt{std\_mutex} & 410.6 & \textbf{210.3} & 211.0 & 249.1 & 271.3 & 275.3 & 276.3 & 286.2 & 286.0 \\ \hline
+\end{tabular}
+\end{table}

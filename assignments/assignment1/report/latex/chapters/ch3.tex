@@ -1,0 +1,89 @@
+\newpage
+\section{Design and Implementation}\label{sec:impl}
+
+\subsection{Code organization and common interface}
+
+The implementation is header-only C++20 that uses only the standard library. Locks live in \texttt{include/pc/locks}, the barriers in \texttt{include/pc/barriers}, the counters in \texttt{include/pc/counters}, and shared helpers in \texttt{include/pc/common}. The three benchmark programs are in \texttt{benchmarks/} and the tests in \texttt{tests/}.
+
+Every lock offers \texttt{acquire(ThreadContext\&)} and \texttt{release(ThreadContext\&)}. MCS needs a queue node per thread, so all locks take a per-thread context; for TAS, TTAS and \texttt{std::mutex} it is an empty struct. This lets the benchmark, the counters and the tests treat every lock through one template. A small RAII guard, \texttt{ScopedLock}, acquires in its constructor and releases in its destructor, so a critical section cannot be left without releasing the lock. The custom algorithms take a compile-time flag \texttt{Sequential}; when it is set, the helper \texttt{order<Sequential>(o)} replaces every memory order with \texttt{seq\_cst}, which produces the SC reference variants used in Section~\ref{sec:testing}.
+
+\subsection{TAS lock}\label{sec:impl-tas}
+
+Listing~\ref{lst:tas} follows the TAS lock of the lecture\cite{r2}. \texttt{std::atomic\_flag} is the one atomic type guaranteed to be lock-free. The successful \texttt{test\_and\_set} uses acquire ordering, the $\|RW$ restriction of an acquire, and \texttt{clear} uses release ordering, the $RW\|$ of a release. A failed \texttt{test\_and\_set} grants nothing, so its ordering does not matter. The spin loop calls \texttt{cpu\_relax()}, which issues the x86 \texttt{pause} instruction; it reduces power and the cost of leaving the loop but is not a memory fence.
+
+\lstinputlisting[caption={[TAS lock]TAS lock (\texttt{include/pc/locks/tas\_lock.hpp}).},label={lst:tas}]{\src/include/pc/locks/tas_lock.hpp}
+
+\subsection{TTAS lock and exponential backoff}\label{sec:impl-ttas}
+
+Listing~\ref{lst:ttas} spins on a relaxed load while the lock is held and attempts \texttt{exchange(true, acquire)} only when it reads \texttt{false}. The slide version attempts the RMW first and spins afterwards; polling first is equivalent and avoids one RMW when the lock is already held. The relaxed load is only a hint: a thread enters the critical section only if its own exchange returned \texttt{false}, and that exchange is what synchronizes with the previous release.
+
+\lstinputlisting[caption={[TTAS lock with optional backoff]TTAS lock with optional backoff (\texttt{include/pc/locks/ttas\_lock.hpp}).},label={lst:ttas}]{\src/include/pc/locks/ttas_lock.hpp}
+
+\subsubsection{Backoff policy}\label{sec:impl-backoff}
+
+When \texttt{WithBackoff} is set, a thread whose exchange failed calls \texttt{Backoff::wait()} (Listing~\ref{lst:backoff}). The wait starts at 1 pause instruction, doubles after every failure and is capped at 1024; a new \texttt{Backoff} object is created for every acquisition, so the delay resets. The statement's example sleeps with \texttt{std::this\_thread::sleep\_for}\cite{r1}. A sleep hands the core to the operating system, whose timer granularity on Windows is far longer than the critical sections here (one \texttt{is\_prime} call takes about 0.4, 4.4 and 44~$\mu$s for $N=97$, 997 and 10007, from $T(1)/K$ in Appendix~\ref{app:tables}), so a sleeping waiter would usually miss the moment the lock is released. A bounded pause loop keeps the waiter on its core while still spreading retries out in time. The same policy is used by the CAS counter.
+
+\lstinputlisting[caption={[Spin hint and exponential backoff]Spin hint and exponential backoff (\texttt{include/pc/common/spin.hpp}, excerpt).},label={lst:backoff},firstline=10,lastline=36]{\src/include/pc/common/spin.hpp}
+
+\subsection{MCS lock}\label{sec:impl-mcs}
+
+Listing~\ref{lst:mcs} follows the MCS pseudocode of the lecture\cite{r2}. Each thread owns a \texttt{ThreadContext}, the queue node, aligned to 64 bytes so that two nodes never share a cache line and each waiter spins on its own line. The node must stay at the same address from \texttt{acquire} until \texttt{release} returns, because other threads hold pointers to it.
+
+\textbf{Acquire.} The thread resets \texttt{next} and sets \texttt{waiting}, then swaps itself into \texttt{tail} with \texttt{exchange(acq\_rel)}. If the old tail was null the lock was free. Otherwise it stores its address into the predecessor's \texttt{next} with release ordering and spins with acquire loads until \texttt{waiting} becomes false.
+
+\textbf{Release} has three paths, which is where MCS is easy to get wrong:
+\begin{enumerate}[leftmargin=1.5em]
+  \item \emph{A successor is linked.} The owner stores \texttt{waiting=false} into the successor's node with release ordering; the successor's acquire load synchronizes with it, so the protected data is published.
+  \item \emph{No successor and no intervening acquire.} The CAS of \texttt{tail} from the owner's node to null succeeds with release ordering. The next thread's \texttt{exchange(acq\_rel)} reads null from this CAS and therefore acquires the protected data. This second publication path is easy to overlook, because no waiting flag is involved.
+  \item \emph{No successor visible, but one has swapped the tail.} The CAS fails, and the owner spins until the successor's \texttt{next} store becomes visible, then hands off as in path~1.
+\end{enumerate}
+
+The CAS in release is \texttt{compare\_exchange\_strong}. The weak form may fail spuriously even when \texttt{tail} still equals the owner's node; the code would then take path~3 and wait forever for a successor that does not exist. The expected value is a separate local pointer, because a failed CAS overwrites it with the current tail. The \texttt{Hooks} template parameter is empty in production builds and lets a test pause a thread exactly between the tail exchange and the link (Section~\ref{sec:testing}).
+
+\lstinputlisting[caption={[MCS queue lock]MCS queue lock (\texttt{include/pc/locks/mcs\_lock.hpp}).},label={lst:mcs}]{\src/include/pc/locks/mcs_lock.hpp}
+
+\subsection{Sense-reversing barrier}\label{sec:impl-barrier}
+
+Listing~\ref{lst:barrier} follows the sense-reversing barrier of the lecture\cite{r2} with two equivalent changes: the counter \texttt{remaining} counts down from $P$, so the last arrival is the thread whose \texttt{fetch\_sub} returns 1, and the senses start as \texttt{false}. The local sense is stored in a per-thread context rather than in a \texttt{thread\_local} variable, because one \texttt{thread\_local} shared by two barrier instances would go out of step when the instances complete different numbers of episodes.
+
+Each arrival performs \texttt{fetch\_sub(acq\_rel)}. Because consecutive RMWs on the same variable form a release sequence, the last arrival acquires the writes made before the barrier by every earlier arrival. It then resets \texttt{remaining} and publishes the new sense with a release store, and the other threads leave after an acquire load of the sense. The reset may be relaxed because it is sequenced before that release store: a thread can start the next episode only after it has seen the new sense, so it also sees the reset counter. The counter and the sense are placed on separate cache lines, so arrivals do not disturb the spinning threads.
+
+\lstinputlisting[caption={[Sense-reversing barrier]Sense-reversing barrier (\texttt{include/pc/barriers/sense\_reversing\_barrier.hpp}).},label={lst:barrier}]{\src/include/pc/barriers/sense_reversing_barrier.hpp}
+
+\subsection{Concurrent counters}\label{sec:impl-counters}
+
+All counters provide \texttt{increment}, which returns the value before the increment, and \texttt{value}. The lock-based counter (Listing~\ref{lst:mutex-counter}) is one template over any lock, so it is instantiated with TAS, TTAS, MCS and \texttt{std::mutex}; the value itself is a plain \texttt{uint64\_t} protected by the lock, and \texttt{value()} takes the lock too. The CAS counter (Listing~\ref{lst:cas}) is the retry loop of the lecture\cite{r2} with \texttt{compare\_exchange\_weak}: on failure \texttt{expected} already holds the current value, so the next attempt uses \texttt{expected+1} without a separate load. The FAA counter (Listing~\ref{lst:faa}) is one \texttt{fetch\_add}. CAS and FAA use relaxed ordering: atomicity alone makes the count correct, and these counters do not publish any other data. A counter used to signal that other data is ready would need release and acquire.
+
+\lstinputlisting[caption={[Lock-based counter]Lock-based counter (\texttt{include/pc/counters/mutex\_counter.hpp}).},label={lst:mutex-counter}]{\src/include/pc/counters/mutex_counter.hpp}
+\lstinputlisting[caption={[CAS counter with optional backoff]CAS counter with optional backoff (\texttt{include/pc/counters/cas\_counter.hpp}).},label={lst:cas}]{\src/include/pc/counters/cas_counter.hpp}
+\lstinputlisting[caption={[FAA counter]FAA counter (\texttt{include/pc/counters/faa\_counter.hpp}).},label={lst:faa}]{\src/include/pc/counters/faa_counter.hpp}
+
+\subsection{Workload and benchmark harness}\label{sec:impl-workload}
+
+\texttt{is\_prime} (Listing~\ref{lst:prime}) keeps the naive trial division of the statement: divisors $2,\dots,N-1$, stopping at the first divisor. It only returns \texttt{false} for $N<2$, which the statement's version does not do, but the benchmarks reject $N<2$, so the work measured is identical. The function is compiled in its own translation unit with link-time optimization disabled, so the compiler cannot inline it into the loops, prove that the result is constant and hoist it out of the critical section.
+
+\lstinputlisting[caption={[Workload from the statement]Workload from the statement (\texttt{src/workload.cpp}).},label={lst:prime}]{\src/src/workload.cpp}
+
+Listing~\ref{lst:bench} is the worker loop of the lock benchmark, the counterpart of \texttt{thread\_entry} in the statement. Each thread adds the results of its calls to a local checksum, which is checked against the expected total after the threads join, so every call is both used and verified. Table~\ref{tab:macro-map} maps the macros of the statement to the command-line parameters.
+
+\lstinputlisting[caption={[Worker loop of the lock benchmark]Worker loop of the lock benchmark (\texttt{benchmarks/bench\_locks.cpp}, excerpt).},label={lst:bench},firstline=9,lastline=31]{\src/benchmarks/bench_locks.cpp}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Parameters of the statement's program and their command-line counterparts.}\label{tab:macro-map}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr 0.27\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr 0.32\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr 0.405\textwidth-2\tabcolsep-\arrayrulewidth\relax}|}
+\hline
+\textbf{Statement\cite{r1}} & \textbf{Benchmark option} & \textbf{Symbol and meaning} \\ \hline
+\texttt{NUM\_OF\_THREADS} & \texttt{-{}-threads} & $P$, number of threads \\ \hline
+\texttt{NUM\_OF\_ITERS} & \texttt{-{}-iterations-per-thread} & $I$, iterations per thread (per-thread mode) \\ \hline
+--- & \texttt{-{}-total-operations} & $K$, iterations shared by all threads (fixed-total mode) \\ \hline
+\texttt{OUTSIDE\_WORK} & \texttt{-{}-outside-work} & $W$, calls outside the critical section per iteration \\ \hline
+\texttt{N} & \texttt{-{}-prime-n} & $N$, the number tested for primality \\ \hline
+\texttt{lock\_mcs lock} & \texttt{-{}-implementation} & \texttt{tas}, \texttt{ttas}, \texttt{ttas\_backoff}, \texttt{mcs}, \texttt{std\_mutex} \\ \hline
+\end{tabular}
+\end{table}
+
+The statement's program has every thread run \texttt{NUM\_OF\_ITERS} iterations, which is the per-thread mode: the total work grows with $P$. Fixed-total mode divides $K$ iterations among the threads instead, which is what a speedup $S(P)=T(1)/T(P)$ requires. Both are measured.
+
+The harness creates the threads, holds them at a start gate (\texttt{std::latch}) until all are ready, runs the work and joins. Program time is measured from just before the first thread is created until after the last join, so it covers the \emph{whole program} as the statement requires. Allocation of per-thread data happens before the timer. The harness also records worker time, from the earliest worker start to the latest worker end after the gate, which the barrier metric uses (Section~\ref{sec:metrics}). The barrier and counter benchmarks share the harness: in the barrier benchmark every thread calls \texttt{arrive\_and\_wait} $E$ times with nothing in between, and in the counter benchmark the threads perform $K$ increments in total.

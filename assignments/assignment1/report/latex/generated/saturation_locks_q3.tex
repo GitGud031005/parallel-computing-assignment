@@ -1,0 +1,15 @@
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\caption{Saturation run: third quartile of program time (ms), showing the tail of each distribution.}\label{tab:saturation-locks-q3}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr 0.200\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.199\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.199\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.199\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedleft\arraybackslash}p{\dimexpr 0.199\textwidth-2\tabcolsep-\arrayrulewidth\relax}|}
+\hline
+\textbf{Lock (ms)} & \textbf{P=12} & \textbf{P=14} & \textbf{P=15} & \textbf{P=16} \\ \hline
+\texttt{tas} & 110.7 & 119.7 & 109.5 & \textbf{110.1} \\ \hline
+\texttt{ttas} & 104.2 & 125.0 & \textbf{105.9} & 122.9 \\ \hline
+\texttt{ttas\_backoff} & \textbf{102.6} & \textbf{92.9} & 134.7 & 118.2 \\ \hline
+\texttt{mcs} & 152.7 & 173.2 & 705.5 & 61\,056 \\ \hline
+\texttt{std\_mutex} & 120.4 & 124.8 & 122.9 & 122.5 \\ \hline
+\end{tabular}
+\end{table}

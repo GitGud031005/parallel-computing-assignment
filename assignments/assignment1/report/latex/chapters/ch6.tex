@@ -1,0 +1,116 @@
+\newpage
+\section{Results and Discussion}\label{sec:results}
+
+All values are medians of \Reps{} measured samples; error bars and bracketed ranges are the IQR. Bold entries in the tables mark the best implementation at each thread count. The complete tables for every experiment are in Appendix~\ref{app:tables}. Explanations that rely on the hardware or the scheduler, rather than on a measurement, are marked as hypotheses.
+
+\subsection{Mutex locks with a fixed total amount of work}\label{sec:res-locks}
+
+Figure~\ref{fig:locks-fixed} shows the program time of the statement's workload for a fixed total of $K=20000$ iterations, so that the total work does not change with $P$.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/locks_fixed_total.png}
+\caption{Lock program time, fixed total $K=20000$, $N=997$, for $W=0,1,4$ (median and IQR).}\label{fig:locks-fixed}
+\end{figure}
+
+\textbf{All work inside the lock ($W=0$).} Equation~\eqref{eq:amdahl} allows no speedup, so the best a lock can do is to keep $T(P)$ at $T(1)\approx87.6$~ms (Table~\ref{tab:locks-fixed-w0}). TAS, TTAS and TTAS-backoff stay between 87 and 112~ms up to $P=14$. \texttt{std::mutex} rises to 119~ms as soon as $P=2$ and then stays flat. MCS stays within 26\% of $T(1)$ up to $P=10$ and climbs to 169--178~ms at $P=12$--14.
+
+\input{generated/locks_fixed_w0}
+
+\textbf{Work outside the lock ($W>0$).} Now the threads can overlap their outside calls, and Table~\ref{tab:speedup-w4} shows how close each lock comes to the bound $S\le W+1$. At $W=1$ the spinlocks reach 1.9$\times$ at $P=2$, close to the bound of 2. At $W=4$ (bound 5) the best speedup is 3.9$\times$ (TTAS-backoff, $P=6$), and at $W=8$ (bound 9) it is 5.6$\times$ (TAS, $P=12$; Table~\ref{tab:speedup-w8}). The gap to the bound grows with $W$ because more threads are needed to approach it, and more threads contend for the lock at every release.
+
+\input{generated/speedup_w4}
+\input{generated/speedup_w8}
+
+\textbf{Beyond 6 to 10 threads} every lock gets slower again (Figure~\ref{fig:locks-fixed}, right). More waiters compete for the lock's cache line at each release. In addition, the laptop has only 6 performance cores, so higher $P$ places threads on the efficiency cores and on Hyper-Threading siblings, which run the primality loop more slowly. This placement explanation is a hypothesis consistent with the data, not a measured scheduler trace.
+
+\subsection{Cost of passing the lock}\label{sec:res-outside}
+
+In per-thread mode every thread performs $I=5000$ iterations, so the total work grows with $P$ (Figure~\ref{fig:locks-per-thread}); this is the statement's program as given. With $W=0$ all of that work is serial, so $T(P)\ge P\cdot T(1)$, and the ratio $T(P)/(P\cdot T(1))$ measures what each lock adds on top of the serial work, mainly the cost of passing ownership from one thread to the next. Computed from Table~\ref{tab:locks-per-thread-w0}, the ratio at $P=14$ is 1.03 for TTAS, 1.06 for TTAS-backoff, 1.18 for TAS, 1.34 for \texttt{std::mutex} and 1.64 for MCS. \texttt{std::mutex} costs 1.33--1.35 at every $P$ from 2 to 14, a fixed price per handoff; TAS and MCS start near 1.0 and grow with $P$, which is the signature of contention.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/locks_per_thread.png}
+\caption{Lock program time, per-thread $I=5000$, $N=997$, for $W=0,1,4$; total work grows with $P$.}\label{fig:locks-per-thread}
+\end{figure}
+
+\subsection{Length of the critical section}\label{sec:res-sensitivity}
+
+Figure~\ref{fig:locks-sens} changes $N$ to make each critical section about ten times shorter ($N=97$) or longer ($N=10007$). With short critical sections the lock changes owner very often. TAS then degrades from 82~ms at $P=1$ to 244~ms at $P=14$, because every waiter keeps executing \texttt{test\_and\_set} on the shared line, while TTAS, which waits with plain reads, stays at 89--106~ms for $P=2$--14 (Table~\ref{tab:sens-n97-w0}). This is the difference between TAS and TTAS that the slides predict, and it appears only when handoffs are frequent: with long critical sections all locks stay within 87--115~ms except MCS at $P=14$ (225~ms).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/locks_sensitivity.png}
+\caption{Short ($N=97$, $K=200000$) and long ($N=10007$, $K=2000$) critical sections, $W=0$.}\label{fig:locks-sens}
+\end{figure}
+
+\subsection{Saturating every logical CPU}\label{sec:res-saturation}
+
+Table~\ref{tab:saturation-locks} adds $P=15$ and 16. TAS, TTAS, TTAS-backoff and \texttt{std::mutex} stay at 91--122~ms at every $P$. MCS rises from 116~ms at $P=12$ to 333~ms at $P=15$ and 2468~ms at $P=16$, and its third quartile at $P=16$ is 61~s (Table~\ref{tab:saturation-locks-q3}); single runs at $P=16$ ranged from 0.18~s to 85~s. In the main run, one MCS warm-up at $P=14$ also exceeded 60~s.
+
+\input{generated/saturation_locks}
+
+MCS passes the lock to one specific thread, its queue successor. When the spinning threads occupy all 16 logical CPUs, together with the operating system's own threads, the scheduler must preempt some of them. If it preempts the successor, the lock is handed to a thread that is not running, and no thread can enter the critical section until the scheduler runs that thread again. This is the drawback the slides note for blocking objects and queue locks: a delayed thread delays all others. TAS and TTAS do not depend on any particular thread: whichever running thread wins the flag enters. The FIFO guarantee that makes MCS fair is thus what makes it fragile once threads outnumber free CPUs.
+
+\subsection{Effect of exponential backoff}\label{sec:res-backoff}
+
+TTAS with backoff helps where failed attempts are frequent. With short critical sections and $W=4$ it lowers the median from 160 to 144~ms at $P=4$ and from 246 to 226~ms at $P=14$ (Table~\ref{tab:sens-n97-w4}), and it gives the best speedups at $W=1$, 2 and 4. Elsewhere TTAS and TTAS-backoff are within each other's IQR, for example 99.8 against 92.1~ms at $P=14$, $W=0$. Backoff therefore never hurt noticeably in these experiments, but its gains are modest because TTAS already avoids most failed RMWs by waiting with reads. Its effect on the CAS counter is much larger (Section~\ref{sec:res-counters}).
+
+\subsection{Comparison with \texttt{std::mutex}}\label{sec:res-stdmutex}
+
+The statement asks for a comparison with existing mutex locks\cite{r1}; \texttt{std::mutex} of the C++ standard library (here libstdc++ for MinGW-w64) is measured in every experiment. It has the most predictable cost, a nearly constant 34\% over the serial bound in Section~\ref{sec:res-outside}, about 1.6~$\mu$s more per handoff than TTAS at $P=2$, $W=0$ (119.3 against 87.7~ms for 20000 handoffs). Because of that cost it never benefits from parallelism at $W=1$: it is slower than one thread for every $P$ from 2 to 14 (207--216 against 177~ms, Table~\ref{tab:locks-fixed-w1}), while the spinlocks almost halve the time. Its best speedup is 3.1$\times$ at $W=4$ and 3.7$\times$ at $W=8$, against 3.9$\times$ and 5.6$\times$ for the best spinlock. On the other hand, it is immune to the collapse of Section~\ref{sec:res-saturation}, because a blocked waiter sleeps instead of occupying a CPU. The likely reason for the handoff cost is that a waiting thread is woken through the operating system; this is a hypothesis, since the mutex's internals were not instrumented.
+
+\subsection{Barrier throughput}\label{sec:res-barrier}
+
+Figure~\ref{fig:barriers} and Table~\ref{tab:barriers} compare the sense-reversing barrier with \texttt{std::barrier}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/barriers.png}
+\caption{Global barrier episodes per second, $E=20000$, no work between episodes (log scale).}\label{fig:barriers}
+\end{figure}
+
+\input{generated/barriers}
+
+At $P=1$ a barrier synchronizes nothing, so 54 million episodes per second only measure the cost of one call. From $P=2$ on, the sense-reversing barrier completes 5.5 million episodes per second against 64 thousand for \texttt{std::barrier}, and 435 thousand against 4.5 thousand at $P=12$: about two orders of magnitude. The sense-reversing barrier releases all waiters with one store to the sense flag, which each waiter sees in its spinning load. \texttt{std::barrier} in the GNU implementation is designed to let a waiting thread block after a short spin, so an episode can include operating-system wake-ups; its rate, nearly flat at 4.5--6.6 thousand per second from $P=8$ to 16, is consistent with a wake-up-bound cost.
+
+The rate of the sense-reversing barrier falls as $P$ grows, because all arrivals perform an RMW on the same counter and the last thread must reach the barrier before anyone leaves. At $P=14$ it drops to 53 thousand per second in the main run and 127 thousand in the saturation run (Table~\ref{tab:saturation-barriers}), and to 22 thousand at $P=16$, still 3.7 times faster than \texttt{std::barrier}. A busy-waiting barrier depends on every participant running: one preempted thread stalls the whole episode. The difference between the two runs at $P=14$ shows how sensitive this regime is to the scheduler.
+
+\input{generated/saturation_barriers}
+
+\subsection{Concurrent counters}\label{sec:res-counters}
+
+Figure~\ref{fig:counters} and Table~\ref{tab:counters} show the time for $K=1000000$ increments in total.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/counters.png}
+\caption{Counter program time for $K=1000000$ increments in total (median and IQR).}\label{fig:counters}
+\end{figure}
+
+\input{generated/counters}
+
+\textbf{No counter is faster with more threads.} The fastest result is FAA with one thread, 13.7~ms. Every increment must update the same cache line, so the increments are serialized in hardware whatever the algorithm, and with more threads the line also moves between cores on every increment. A shared counter is a serial bottleneck, not a parallel workload.
+
+\textbf{CAS with backoff} stays at 24--28~ms for every $P$, the lowest time from $P=2$ on. After a failed CAS the losing threads pause, so the winner can complete many increments in a row while its core owns the cache line. This raises throughput but concentrates the work on one thread at a time; it does not make the counter fairer. \textbf{Plain CAS} rises from 24~ms to 116~ms at $P=14$, because every failed attempt still moves the line. \textbf{FAA} stays at 33--45~ms for $P\ge2$, since an increment is a single RMW that cannot fail.
+
+\textbf{Lock-based counters} pay an acquire and a release per increment, and the critical section is a single addition, so the cost of passing the lock dominates. With $P=14$ the counter takes 149~ms with \texttt{std::mutex}, 404~ms with TTAS, 629~ms with MCS and 731~ms with TAS. MCS is already at 304~ms with two threads, against 37~ms with one, presumably because almost every increment then hands the lock to a thread on another core. The ranking also differs from the prime workload: with $W=0$ at $P=14$, TAS beats \texttt{std::mutex} (108 against 122~ms), but in the counter, whose critical section is a single addition, TAS is the slowest lock and \texttt{std::mutex} the fastest. A lock cannot be chosen without knowing the length of the critical section and the number of threads.
+
+\subsection{Summary of findings}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Main findings on the measured laptop.}\label{tab:findings}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{\dimexpr 0.25\textwidth-2\tabcolsep-\arrayrulewidth\relax}|>{\raggedright\arraybackslash}p{\dimexpr 0.745\textwidth-2\tabcolsep-\arrayrulewidth\relax}|}
+\hline
+\textbf{Topic} & \textbf{Finding} \\ \hline
+Speedup bound & Spinlocks reach 1.9$\times$, 2.8$\times$, 3.9$\times$ and 5.6$\times$ for $W=1,2,4,8$, against Amdahl bounds of 2, 3, 5 and 9. \\ \hline
+TAS vs.\ TTAS & TTAS's read-only waiting matters with frequent handoffs: 106 against 244~ms at $P=14$, $N=97$. \\ \hline
+MCS & Competitive up to about 10 threads; collapses at $P=15$--16 because a preempted queue successor blocks the lock. \\ \hline
+\texttt{std::mutex} & A constant handoff cost of about 34\% over the serial bound; slower than one thread at $W=1$; robust when threads exceed CPUs. \\ \hline
+Backoff & Modest gains for TTAS; large gains for the CAS counter, by serializing the work. \\ \hline
+Barrier & Sense reversal is about 100$\times$ faster than \texttt{std::barrier} up to 12 threads and still 3.7$\times$ at 16. \\ \hline
+Counters & No variant scales; FAA is the fastest single-thread option, CAS with backoff the fastest multi-thread option. \\ \hline
+\end{tabular}
+\end{table}
