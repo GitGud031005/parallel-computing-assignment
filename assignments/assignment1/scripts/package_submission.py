@@ -17,7 +17,7 @@ def stale_report_inputs():
     inputs = [p for p in LATEX.rglob("*") if p.is_file() and "build" not in p.relative_to(LATEX).parts
               and p.name != "build-run.txt"]
     for folder in ["include", "src", "benchmarks"]:
-        inputs.extend(p for p in (ASSIGNMENT / folder).rglob("*") if p.is_file())
+        inputs.extend(p for p in (ASSIGNMENT / folder).rglob("*") if p.suffix in [".hpp", ".cpp"])
     built = REPORT.stat().st_mtime
     return [p.relative_to(ROOT).as_posix() for p in inputs if p.stat().st_mtime > built]
 

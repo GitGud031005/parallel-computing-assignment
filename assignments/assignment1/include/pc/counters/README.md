@@ -4,4 +4,4 @@
 
 `increment(context)` trả old value; `value(context)` đọc theo cơ chế bảo vệ tương ứng. Khởi tạo tùy chọn bằng uint64_t; caller đảm bảo workload không wraparound. CLI kiểm tra overflow khi tính tổng.
 
-Xem [thiết kế](../../../docs/design.md) và [tests](../../../tests/test_counters.cpp).
+Lập luận happens-before ở mục 3 của báo cáo; xem [tests](../../../tests/test_counters.cpp).

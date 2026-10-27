@@ -4,4 +4,4 @@
 
 Lock modes: per_thread (I vòng mỗi thread) hoặc fixed_total (K chia thương/số dư). Counter dùng fixed_total. Barrier có E episode toàn cục, mỗi worker E lần arrive_and_wait; không useful work trong loop.
 
-Protocol chi tiết ở [benchmarking.md](../docs/benchmarking.md). Log/CSV/cấp phát không nằm trong hot loops; standard baselines dùng cùng harness.
+Protocol đo chi tiết ở mục 5 của báo cáo. Log/CSV/cấp phát không nằm trong hot loops; standard baselines dùng cùng harness.

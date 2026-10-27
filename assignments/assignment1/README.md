@@ -2,11 +2,11 @@
 
 Project C++20 cài đặt TAS/TTAS/MCS, Sense-Reversing Barrier và concurrent counters bằng mutex/CAS/FAA. Có baseline `std::mutex`/`std::barrier`, TTAS/CAS exponential backoff, correctness tests và pipeline benchmark/report. MPI-3 RMA là phần tùy chọn, chưa triển khai.
 
-GitHub chứa code và tài liệu tự viết. **Slide và PDF đề gốc không được đưa lên GitHub.** Báo cáo nộp là bản LaTeX theo template HCMUT ở [report/latex](report/latex/); PDF build ra `report/latex/build/main.pdf` và nằm ở gốc ZIP dưới tên `Assignment1_Report.pdf`. Dữ liệu đo, logs, hình rời và ZIP giữ cục bộ; xem [results](results/README.md). Kết quả đối chiếu lần cuối ở [verification.md](docs/verification.md).
+Báo cáo nộp là `Assignment1_Report.pdf` ở gốc ZIP, viết bằng LaTeX theo template HCMUT. Số liệu đo, hình và kết quả kiểm tra nằm trong [results](results/README.md).
 
 ## Đọc theo kiến thức môn học
 
-[Bản review cả hai bài theo slide](../../docs/course-review.md) có bảng slide → thuật toán → code, các khác biệt hợp lý giữa pseudocode và C++ và giới hạn của tests. Với Ass1, ưu tiên Ch02a/b → Ch03 TAS/TTAS/MCS → Ch04 sense reversal → Ch05 counter specification/progress. Nguồn chuẩn C++/pseudocode ngoài môn chỉ bổ sung cho việc diễn đạt, không thay slide làm cơ sở chính.
+Các thuật toán bám theo slide môn học, theo thứ tự: atomics và memory order → TAS/TTAS/MCS → sense-reversing barrier → đặc tả và progress của concurrent counter. Mục 2 của báo cáo tóm tắt kiến thức nền này, mục 3 giải thích chỗ cài đặt C++ khác pseudocode và vì sao.
 
 ## 1. Build và chạy nhanh
 
@@ -38,10 +38,9 @@ Mỗi benchmark hỗ trợ `--help`, in một JSON, hoặc ghi file bằng `--ou
 | [tests](tests/) | Correctness, CLI và phép tính analysis |
 | [config](config/) | Ma trận smoke, pilot và reference benchmark |
 | [scripts](scripts/) | Build/test → đo → validate → summary → plots → report → ZIP |
-| [docs](docs/) | Requirements, thiết kế/memory ordering, testing, benchmarking, kiểm tra cuối |
-| [report/outline.md](report/outline.md), [results/README.md](results/README.md) | Khung báo cáo và hướng dẫn đầu ra cục bộ |
+| [results](results/README.md) | Số liệu đo trên laptop, hình và kết quả kiểm tra |
 
-Nên đọc `workload.cpp` → `tas_lock.hpp` → `ttas_lock.hpp` → `mcs_lock.hpp` → `sense_reversing_barrier.hpp` → ba counters. Sau đó đọc benchmark tương ứng và test của nó. Chi tiết đường trạng thái và happens-before ở [design.md](docs/design.md), kiến thức slide được diễn giải trong [slide-notes.md](../../docs/slide-notes.md).
+Nên đọc `workload.cpp` → `tas_lock.hpp` → `ttas_lock.hpp` → `mcs_lock.hpp` → `sense_reversing_barrier.hpp` → ba counters. Sau đó đọc benchmark tương ứng và test của nó. Lập luận happens-before cho từng thuật toán nằm ở mục 3 của báo cáo.
 
 ## 3. Locks: API, lifetime và workload
 
@@ -170,7 +169,7 @@ python3 assignments/assignment1/scripts/verify.py --output validation-local/chec
 
 `verify.py` lưu logs/exit codes/checks.json; `--stress` tăng workload ba C++ suites 10 lần. Output directory phải mới. GCC/Clang cần hỗ trợ sanitizer tương ứng. ASan mode bật cả address và UB checks; thread mode là TSan. Nếu host thực sự chặn LeakSanitizer do `/proc task`/ptrace, có thể thêm `--disable-leak-detection`: chỉ bỏ LSan và ghi giới hạn vào checks, không chứng nhận leak-free. Giữ mặc định trên host hỗ trợ đầy đủ.
 
-Kết quả thực thi và giới hạn ở [verification.md](docs/verification.md). Test/sanitizer hữu hạn không duyệt hết interleavings và không thay thế lập luận happens-before.
+Kết quả kiểm tra và giới hạn ở mục 4 của báo cáo và `results/platforms/checks-laptop-02.json`. Test/sanitizer hữu hạn không duyệt hết interleavings và không thay thế lập luận happens-before.
 
 ## 8. Benchmark tái lập, report và ZIP
 
@@ -203,8 +202,8 @@ Số liệu trong báo cáo đo trên laptop của người nộp (Intel Core i7
 
 ## 9. Khi sửa code
 
-1. Sửa thuật toán kèm invariant/happens-before trong [design.md](docs/design.md).
+1. Sửa thuật toán kèm cập nhật lập luận invariant/happens-before trong báo cáo.
 2. Build và chạy test liên quan, toàn bộ CTest, sanitizer phù hợp; dùng directed/stress tests khi đổi synchronization.
 3. Rebuild mọi executables sau khi đổi C++/CMake. Runner kiểm fingerprint để tránh đo binary cũ.
 4. Benchmark vào thư mục mới, tạo lại summary/hình/report; không gắn kết quả source cũ cho source mới.
-5. Giải nén ZIP ở thư mục khác và build/test trước nộp. Đối chiếu [requirements.md](docs/requirements.md), định danh và giờ LMS. Repo không tự nộp LMS.
+5. Giải nén ZIP ở thư mục khác và build/test trước nộp. Đối chiếu bảng yêu cầu ở mục 1 của báo cáo, định danh và giờ LMS. Repo không tự nộp LMS.
